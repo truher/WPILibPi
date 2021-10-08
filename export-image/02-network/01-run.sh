@@ -12,4 +12,8 @@ cp /etc/dhcpcd.conf /boot/
 chown -f 0:0 /boot/dhcpcd.conf
 ln -sf /boot/dhcpcd.conf /etc/dhcpcd.conf
 
+cp /etc/wpa_supplicant/wpa_supplicant.conf /boot/wpa_supplicant_wpilibpi.conf
+chown -f 0:0 /boot/wpa_supplicant_wpilibpi.conf
+ln -sf /boot/wpa_supplicant_wpilibpi.conf /etc/wpa_supplicant/wpa_supplicant.conf
+
 EOF
