@@ -46,11 +46,11 @@ wget -nc -nv \
 
 # opencv sources
 wget -nc -nv \
-    https://github.com/opencv/opencv/archive/3.4.7.tar.gz
+    https://github.com/opencv/opencv/archive/4.5.2.tar.gz
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2021.3.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/archive/v2022.3.1.tar.gz
 
 # pynetworktables
 wget -nc -nv -O pynetworktables.tar.gz \
@@ -58,11 +58,11 @@ wget -nc -nv -O pynetworktables.tar.gz \
 
 # robotpy-cscore
 wget -nc -nv -O robotpy-cscore.tar.gz \
-    https://github.com/robotpy/robotpy-cscore/archive/2021.0.0.tar.gz
+    https://github.com/robotpy/robotpy-cscore/archive/2022.0.3.tar.gz
 
 # pybind11 submodule of robotpy-cscore
 wget -nc -nv -O pybind11.tar.gz \
-    https://github.com/pybind/pybind11/archive/v2.6.1.tar.gz
+    https://github.com/robotpy/pybind11/archive/67b55bcf7887aad358a6bc91c73e07d1920e96bd.tar.gz
 
 # pixy2
 wget -nc -nv -O pixy2.tar.gz \
@@ -78,8 +78,8 @@ install -v -d ${EXTRACT_DIR}
 pushd ${EXTRACT_DIR}
 
 # opencv
-tar xzf "${DOWNLOAD_DIR}/3.4.7.tar.gz"
-pushd opencv-3.4.7
+tar xzf "${DOWNLOAD_DIR}/4.5.2.tar.gz"
+pushd opencv-4.5.2
 sed -i -e 's/javac sourcepath/javac target="1.8" source="1.8" sourcepath/' modules/java/jar/build.xml.in
 # disable extraneous data warnings; these are common with USB cameras
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg/jdmarker.c
@@ -90,6 +90,9 @@ popd
 # allwpilib
 tar xzf "${DOWNLOAD_DIR}/allwpilib.tar.gz"
 mv allwpilib-* allwpilib
+pushd allwpilib
+sed -i -e 's/add_subdirectory(fieldImages)//' CMakeLists.txt
+popd
 
 # pynetworktables
 tar xzf "${DOWNLOAD_DIR}/pynetworktables.tar.gz"
@@ -99,7 +102,7 @@ echo "__version__ = '2021.0.0'" > pynetworktables/_pynetworktables/_impl/version
 # robotpy-cscore
 tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
 mv robotpy-cscore-* robotpy-cscore
-echo "__version__ = '2021.0.0'" > robotpy-cscore/cscore/version.py
+echo "__version__ = '2022.0.2'" > robotpy-cscore/cscore/version.py
 pushd robotpy-cscore
 rm -rf pybind11
 tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
@@ -119,6 +122,9 @@ popd
 # Build
 #
 
+# get number of CPU cores
+NCPU=`grep -c 'cpu[0-9]' /proc/stat`
+
 # extract raspbian toolchain
 pushd ${WORK_DIR}
 tar xzf ${DOWNLOAD_DIR}/Raspbian10-Linux-i386-Toolchain-*.tar.gz
@@ -137,7 +143,7 @@ build_opencv () {
     rm -rf $1
     mkdir -p $1
     pushd $1
-    cmake "${EXTRACT_DIR}/opencv-3.4.7" \
+    cmake "${EXTRACT_DIR}/opencv-4.5.2" \
 	-DWITH_FFMPEG=OFF \
         -DBUILD_JPEG=ON \
         -DBUILD_TESTS=OFF \
@@ -156,10 +162,11 @@ build_opencv () {
         -DPYTHON3_INCLUDE_PATH=${ROOTFS_DIR}/usr/include/python3.7m \
         -DPYTHON3_NUMPY_INCLUDE_DIRS=${ROOTFS_DIR}/usr/include/python3.7m/numpy \
         -DOPENCV_EXTRA_FLAGS_DEBUG=-Og \
+	-DOPENCV_GENERATE_PKGCONFIG=ON \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc$4 \
         || exit 1
-    make -j3 || exit 1
+    make -j${NCPU} || exit 1
     make DESTDIR=${ROOTFS_DIR} install || exit 1
     popd
 }
@@ -169,9 +176,9 @@ build_opencv build/opencv-build Release ON "" || exit 1
 build_opencv build/opencv-static Release OFF "-static" || exit 1
 
 # fix up java install
-cp -p ${ROOTFS_DIR}/usr/local/frc/share/OpenCV/java/libopencv_java347*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
+cp -p ${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/libopencv_java452*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
 mkdir -p "${ROOTFS_DIR}/usr/local/frc/java"
-cp -p "${ROOTFS_DIR}/usr/local/frc/share/OpenCV/java/opencv-347.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
+cp -p "${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/opencv-452.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
 
 # the opencv build names the python .so with the build platform name
 # instead of the target platform, so rename it
@@ -198,13 +205,13 @@ build_wpilib () {
         -DCMAKE_BUILD_TYPE=$2 \
         -DCMAKE_TOOLCHAIN_FILE=${SUB_STAGE_DIR}/files/arm-pi-gnueabihf.toolchain.cmake \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
-        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-347.jar` \
-        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java347.so` \
-        -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/OpenCV \
+        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-452.jar` \
+        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java452.so` \
+        -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/opencv4 \
         -DTHREADS_PTHREAD_ARG=-pthread \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc \
         || exit 1
-    make -j3 || exit 1
+    make -j${NCPU} || exit 1
     popd
 }
 
@@ -229,7 +236,7 @@ build_static_wpilib() {
         -DTHREADS_PTHREAD_ARG=-pthread \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc-static \
         || exit 1
-    make -j3 || exit 1
+    make -j${NCPU} || exit 1
     popd
 }
 build_static_wpilib build/allwpilib-static || exit 1
@@ -252,6 +259,8 @@ sh -c 'cd build/allwpilib-build/jar && tar cf - *.jar' | \
 # headers
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/fmtlib/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/libuv/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/cscore/src/main/native/include && tar cf - ." | \
@@ -264,6 +273,8 @@ sh -c "cd ${EXTRACT_DIR}/allwpilib/hal/src/main/native/include && tar cf - ." | 
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/eigeninclude && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpilibc/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 
@@ -274,6 +285,7 @@ sh -c 'cd build/allwpilib-static/bin && tar cf - cscore_* netconsoleTee*' | \
 # pkgconfig files
 install -v -d "${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig"
 install -m 644 ${SUB_STAGE_DIR}/files/pkgconfig/* "${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig"
+install -v -d "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig"
 for f in ${SUB_STAGE_DIR}/files/pkgconfig/*.pc; do
   install -m 644 $f "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig"
   sed -i -e 's,/usr/local/frc,/usr/local/frc-static,' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig/`basename $f`"
@@ -315,6 +327,9 @@ pushd ${EXTRACT_DIR}/robotpy-cscore
 sh -c 'tar cf - cscore' | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages && tar xf -"
 
+# install blank _init_cscore.py
+touch "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/cscore/_init_cscore.py"
+
 # build module
 arm-raspbian10-linux-gnueabihf-g++ \
     --sysroot=${ROOTFS_DIR} \
@@ -343,14 +358,6 @@ install -m 644 "${EXTRACT_DIR}/pixy2/build/libpixyusb2/libpixy2.a" "${ROOTFS_DIR
 install -m 644 "${EXTRACT_DIR}/pixy2/build/python_demos/pixy.py" "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/"
 install -m 755 ${EXTRACT_DIR}/pixy2/build/python_demos/_pixy.*.so "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/"
 rm -rf "${EXTRACT_DIR}/pixy2/build"
-
-#
-# Install ML dependency
-#
-
-on_chroot << EOF
-pip3 install https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp37-cp37m-linux_armv7l.whl
-EOF
 
 #
 # Finish up

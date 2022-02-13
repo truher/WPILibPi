@@ -4,13 +4,15 @@
 
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
+#include <fmt/format.h>
 #include <networktables/NetworkTableInstance.h>
 #include <vision/VisionPipeline.h>
 #include <vision/VisionRunner.h>
-#include <wpi/StringRef.h>
+#include <wpi/StringExtras.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
@@ -83,8 +85,8 @@ std::vector<CameraConfig> cameraConfigs;
 std::vector<SwitchedCameraConfig> switchedCameraConfigs;
 std::vector<cs::VideoSource> cameras;
 
-wpi::raw_ostream& ParseError() {
-  return wpi::errs() << "config error in '" << configFile << "': ";
+void ParseError(std::string_view msg) {
+  fmt::print(stderr, "config error in '{}': {}\n", configFile, msg);
 }
 
 bool ReadCameraConfig(const wpi::json& config) {
@@ -94,7 +96,7 @@ bool ReadCameraConfig(const wpi::json& config) {
   try {
     c.name = config.at("name").get<std::string>();
   } catch (const wpi::json::exception& e) {
-    ParseError() << "could not read camera name: " << e.what() << '\n';
+    ParseError(fmt::format("could not read camera name: {}", e.what()));
     return false;
   }
 
@@ -102,8 +104,7 @@ bool ReadCameraConfig(const wpi::json& config) {
   try {
     c.path = config.at("path").get<std::string>();
   } catch (const wpi::json::exception& e) {
-    ParseError() << "camera '" << c.name
-                 << "': could not read path: " << e.what() << '\n';
+    ParseError(fmt::format("camera '{}': could not read path: {}", c.name, e.what()));
     return false;
   }
 
@@ -123,7 +124,8 @@ bool ReadSwitchedCameraConfig(const wpi::json& config) {
   try {
     c.name = config.at("name").get<std::string>();
   } catch (const wpi::json::exception& e) {
-    ParseError() << "could not read switched camera name: " << e.what() << '\n';
+    ParseError(fmt::format("could not read switched camera name: {}",
+                           e.what()));
     return false;
   }
 
@@ -131,8 +133,8 @@ bool ReadSwitchedCameraConfig(const wpi::json& config) {
   try {
     c.key = config.at("key").get<std::string>();
   } catch (const wpi::json::exception& e) {
-    ParseError() << "switched camera '" << c.name
-                 << "': could not read key: " << e.what() << '\n';
+    ParseError(fmt::format("switched camera '{}': could not read key: {}",
+                           c.name, e.what()));
     return false;
   }
 
@@ -155,13 +157,13 @@ bool ReadConfig() {
   try {
     j = wpi::json::parse(is);
   } catch (const wpi::json::parse_error& e) {
-    ParseError() << "byte " << e.byte << ": " << e.what() << '\n';
+    ParseError(fmt::format("byte {}: {}", e.byte, e.what()));
     return false;
   }
 
   // top level must be an object
   if (!j.is_object()) {
-    ParseError() << "must be JSON object\n";
+    ParseError("must be JSON object");
     return false;
   }
 
@@ -169,7 +171,7 @@ bool ReadConfig() {
   try {
     team = j.at("team").get<unsigned int>();
   } catch (const wpi::json::exception& e) {
-    ParseError() << "could not read team number: " << e.what() << '\n';
+    ParseError(fmt::format("could not read team number: {}", e.what()));
     return false;
   }
 
@@ -177,16 +179,15 @@ bool ReadConfig() {
   if (j.count("ntmode") != 0) {
     try {
       auto str = j.at("ntmode").get<std::string>();
-      wpi::StringRef s(str);
-      if (s.equals_lower("client")) {
+      if (wpi::equals_lower(str, "client")) {
         server = false;
-      } else if (s.equals_lower("server")) {
+      } else if (wpi::equals_lower(str, "server")) {
         server = true;
       } else {
-        ParseError() << "could not understand ntmode value '" << str << "'\n";
+        ParseError(fmt::format("could not understand ntmode value '{}'", str));
       }
     } catch (const wpi::json::exception& e) {
-      ParseError() << "could not read ntmode: " << e.what() << '\n';
+      ParseError(fmt::format("could not read ntmode: {}", e.what()));
     }
   }
 
@@ -196,7 +197,7 @@ bool ReadConfig() {
       if (!ReadCameraConfig(camera)) return false;
     }
   } catch (const wpi::json::exception& e) {
-    ParseError() << "could not read cameras: " << e.what() << '\n';
+    ParseError(fmt::format("could not read cameras: {}", e.what()));
     return false;
   }
 
@@ -207,7 +208,7 @@ bool ReadConfig() {
         if (!ReadSwitchedCameraConfig(camera)) return false;
       }
     } catch (const wpi::json::exception& e) {
-      ParseError() << "could not read switched cameras: " << e.what() << '\n';
+      ParseError(fmt::format("could not read switched cameras: {}", e.what()));
       return false;
     }
   }
@@ -216,11 +217,9 @@ bool ReadConfig() {
 }
 
 cs::UsbCamera StartCamera(const CameraConfig& config) {
-  wpi::outs() << "Starting camera '" << config.name << "' on " << config.path
-              << '\n';
-  auto inst = frc::CameraServer::GetInstance();
+  fmt::print("Starting camera '{}' on {}\n", config.name, config.path);
   cs::UsbCamera camera{config.name, config.path};
-  auto server = inst->StartAutomaticCapture(camera);
+  auto server = frc::CameraServer::StartAutomaticCapture(camera);
 
   camera.SetConfigJson(config.config);
   camera.SetConnectionStrategy(cs::VideoSource::kConnectionKeepOpen);
@@ -232,10 +231,8 @@ cs::UsbCamera StartCamera(const CameraConfig& config) {
 }
 
 cs::MjpegServer StartSwitchedCamera(const SwitchedCameraConfig& config) {
-  wpi::outs() << "Starting switched camera '" << config.name << "' on "
-              << config.key << '\n';
-  auto server =
-      frc::CameraServer::GetInstance()->AddSwitchedCamera(config.name);
+  fmt::print("Starting switched camera '{}' on {}\n", config.name, config.key);
+  auto server = frc::CameraServer::AddSwitchedCamera(config.name);
 
   nt::NetworkTableInstance::GetDefault()
       .GetEntry(config.key)
@@ -279,10 +276,10 @@ int main(int argc, char* argv[]) {
   // start NetworkTables
   auto ntinst = nt::NetworkTableInstance::GetDefault();
   if (server) {
-    wpi::outs() << "Setting up NetworkTables server\n";
+    fmt::print("Setting up NetworkTables server\n");
     ntinst.StartServer();
   } else {
-    wpi::outs() << "Setting up NetworkTables client for team " << team << '\n';
+    fmt::print("Setting up NetworkTables client for team {}\n", team);
     ntinst.StartClientTeam(team);
     ntinst.StartDSClient();
   }

@@ -4,7 +4,7 @@
 
 #include "VisionSettings.h"
 
-#include <wpi/FileSystem.h>
+#include <wpi/fs.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
@@ -17,11 +17,11 @@ std::shared_ptr<VisionSettings> VisionSettings::GetInstance() {
 }
 
 void VisionSettings::Set(const wpi::json& data,
-                         std::function<void(wpi::StringRef)> onFail) {
+                         std::function<void(std::string_view)> onFail) {
   {
     // write file
     std::error_code ec;
-    wpi::raw_fd_ostream os(FRC_JSON, ec, wpi::sys::fs::F_Text);
+    wpi::raw_fd_ostream os(FRC_JSON, ec, fs::F_Text);
     if (ec) {
       onFail("could not write " FRC_JSON);
       return;

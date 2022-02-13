@@ -7,9 +7,9 @@
 
 #include <functional>
 #include <memory>
+#include <string_view>
 
 #include <wpi/Signal.h>
-#include <wpi/StringRef.h>
 #include <wpi/uv/Loop.h>
 
 namespace wpi {
@@ -31,12 +31,13 @@ class NetworkSettings {
   enum WifiMode { kBridge, kAccessPoint };
   enum Mode { kDhcp, kStatic, kDhcpStatic };
 
-  void Set(Mode mode, wpi::StringRef address, wpi::StringRef mask,
-           wpi::StringRef gateway, wpi::StringRef dns, WifiMode wifiAPMode,
-           int wifiChannel, wpi::StringRef wifiSsid, wpi::StringRef wifiWpa2,
-           Mode wifiMode, wpi::StringRef wifiAddress, wpi::StringRef wifiMask,
-           wpi::StringRef wifiGateway, wpi::StringRef wifiDns,
-           std::function<void(wpi::StringRef)> onFail);
+  void Set(Mode mode, std::string_view address, std::string_view mask,
+           std::string_view gateway, std::string_view dns, WifiMode wifiAPMode,
+           int wifiChannel, std::string_view wifiSsid,
+           std::string_view wifiWpa2, Mode wifiMode,
+           std::string_view wifiAddress, std::string_view wifiMask,
+           std::string_view wifiGateway, std::string_view wifiDns,
+           std::function<void(std::string_view)> onFail);
 
   void UpdateStatus();
 

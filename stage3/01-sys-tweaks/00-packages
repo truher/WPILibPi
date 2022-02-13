@@ -4,11 +4,12 @@ libpython3.7-dev
 python3.7-minimal
 python3.7-dev
 python3-distutils
+python3-jinja2
 python3-numpy
-python3-pybind11
 python3-pip
 libusb-1.0-0-dev
 swig
 pigpio
 python-pigpio
 python3-pigpio
+python3-tflite-runtime
