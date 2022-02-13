@@ -1288,7 +1288,7 @@ $('#romiCalibrateButton').click(function() {
           $('#romiCalibrateButton').button('reset');
         }
 
-        $('#romiCalibrationTimeLeft').html(calibrationState.estimatedTimeLeft + " seconds left");
+        $('#romiCalibrationTimeLeft').html(Math.ceil(calibrationState.estimatedTimeLeft) + " seconds left");
         $('#romiCalibrationProgressPercent').html("(" + calibrationState.percentComplete + "%)");
         $('#romiCalibrationProgressBar').attr("style", "width: " + calibrationState.percentComplete + "%");
         $('#romiCalibrationProgressBar').attr("aria-valuenow", calibrationState.percentComplete.toString());
