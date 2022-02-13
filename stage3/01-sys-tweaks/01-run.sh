@@ -393,6 +393,10 @@ install -m 644 files/ld.so.conf.d/*.conf "${ROOTFS_DIR}/etc/ld.so.conf.d/"
 
 install -m 644 files/profile.d/*.sh "${ROOTFS_DIR}/etc/profile.d/"
 
+# Add udev rules
+
+install -m 644 files/rules.d/*.rules "${ROOTFS_DIR}/etc/udev/rules.d/"
+
 on_chroot << EOF
 ldconfig
 EOF
