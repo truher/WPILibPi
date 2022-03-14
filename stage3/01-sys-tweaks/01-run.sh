@@ -50,7 +50,7 @@ wget -nc -nv \
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2022.3.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/archive/v2022.4.1.tar.gz
 
 # pynetworktables
 wget -nc -nv -O pynetworktables.tar.gz \
