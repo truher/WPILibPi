@@ -9,6 +9,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <span>
+#include <string_view>
+
+#include <wpi/SmallString.h>
 #include <wpi/StringExtras.h>
 #include <wpi/raw_ostream.h>
 
@@ -46,7 +50,7 @@ bool UploadHelper::Open(std::string_view filename, bool text,
   return m_fd >= 0;
 }
 
-void UploadHelper::Write(wpi::span<const uint8_t> contents) {
+void UploadHelper::Write(std::span<const uint8_t> contents) {
   if (m_fd < 0) return;
   // write contents
   wpi::raw_fd_ostream out(m_fd, false);

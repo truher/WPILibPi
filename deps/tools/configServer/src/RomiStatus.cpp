@@ -15,16 +15,17 @@
 
 #include <fmt/format.h>
 #include <wpi/SmallString.h>
+#include <wpi/fmt/raw_ostream.h>
 #include <wpi/fs.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
-#include <wpi/uv/Buffer.h>
-#include <wpi/uv/FsEvent.h>
-#include <wpi/uv/Pipe.h>
-#include <wpi/uv/Process.h>
-#include <wpi/uv/Timer.h>
-#include <wpi/uv/Work.h>
+#include <wpinet/uv/Buffer.h>
+#include <wpinet/uv/FsEvent.h>
+#include <wpinet/uv/Pipe.h>
+#include <wpinet/uv/Process.h>
+#include <wpinet/uv/Timer.h>
+#include <wpinet/uv/Work.h>
 
 namespace uv = wpi::uv;
 
@@ -55,14 +56,14 @@ void RomiStatus::RunSvc(const char* cmd,
     if (fd == -1) {
       wpi::raw_svector_ostream os(r->err);
       if (errno == ENXIO)
-        os << "unable to control service: supervise not running";
+        fmt::print(os, "unable to control service: supervise not running");
       else
-        os << "unable to control service: " << std::strerror(errno);
+        fmt::print(os, "unable to control service: {}", std::strerror(errno));
     } else {
       fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
       if (write(fd, r->cmd, std::strlen(r->cmd)) == -1) {
         wpi::raw_svector_ostream os(r->err);
-        os << "error writing command: " << std::strerror(errno);
+        fmt::print(os, "error writing command: {}", std::strerror(errno));
       }
       close(fd);
     }
@@ -109,9 +110,9 @@ void RomiStatus::UpdateStatus() {
     int fd = open(SERVICE "/supervise/ok", O_WRONLY | O_NDELAY);
     if (fd == -1) {
       if (errno == ENXIO)
-        os << "supervise not running";
+        fmt::print(os, "supervise not running");
       else
-        os << "unable to open supervise/ok: " << std::strerror(errno);
+        fmt::print(os, "unable to open supervise/ok: {}", std::strerror(errno));
       return;
     }
     close(fd);
@@ -119,18 +120,19 @@ void RomiStatus::UpdateStatus() {
     // read the status data
     fd = open(SERVICE "/supervise/status", O_RDONLY | O_NDELAY);
     if (fd == -1) {
-      os << "unable to open supervise/status: " << std::strerror(errno);
+      fmt::print(os, "unable to open supervise/status: {}",
+                 std::strerror(errno));
       return;
     }
     uint8_t status[18];
     int nr = read(fd, status, sizeof status);
     close(fd);
     if (nr < static_cast<int>(sizeof status)) {
-      os << "unable to read supervise/status: ";
+      fmt::print(os, "unable to read supervise/status: ");
       if (nr == -1)
-        os << std::strerror(errno);
+        fmt::print(os, "{}", std::strerror(errno));
       else
-        os << "bad format";
+        fmt::print(os, "bad format");
       return;
     }
 
@@ -160,13 +162,13 @@ void RomiStatus::UpdateStatus() {
 
     // convert to status string
     if (pid)
-      os << fmt::format("up (pid {}) ", pid);
+      fmt::print(os, "up (pid {}) ", pid);
     else
-      os << "down ";
-    os << fmt::format("{} seconds", when);
-    if (pid && paused) os << ", paused";
-    if (!pid && want == 'u') os << ", want up";
-    if (pid && want == 'd') os << ", want down";
+      fmt::print(os, "down ");
+    fmt::print(os, "{} seconds", when);
+    if (pid && paused) fmt::print(os, ", paused");
+    if (!pid && want == 'u') fmt::print(os, ", want up");
+    if (pid && want == 'd') fmt::print(os, ", want down");
 
     if (pid) r->enabled = true;
   });
@@ -204,7 +206,7 @@ void RomiStatus::FirmwareUpdate(std::function<void(std::string_view)> onFail) {
     // send stdout output to firmware log
     if (pipe) {
       pipe->StartRead();
-      pipe->data.connect([=](uv::Buffer& buf, size_t len) {
+      pipe->data.connect([this](uv::Buffer& buf, size_t len) {
         wpi::json j = {{"type", "romiFirmwareLog"},
                        {"data", std::string_view(buf.base, len)}};
         update(j);
@@ -231,7 +233,8 @@ void RomiStatus::UpdateConfig(std::function<void(std::string_view)> onFail) {
   config(GetConfigJson(onFail));
 }
 
-wpi::json RomiStatus::ReadRomiConfigFile(std::function<void(std::string_view)> onFail) {
+wpi::json RomiStatus::ReadRomiConfigFile(
+    std::function<void(std::string_view)> onFail) {
   // Read config file
   std::error_code ec;
   wpi::raw_fd_istream is(ROMI_JSON, ec);
@@ -239,7 +242,7 @@ wpi::json RomiStatus::ReadRomiConfigFile(std::function<void(std::string_view)> o
   if (ec) {
     onFail("Could not read romi config file");
     fmt::print(stderr, "could not read {}\n", ROMI_JSON);
-    wpi::json();
+    return wpi::json();
   }
 
   wpi::json j;
@@ -247,14 +250,14 @@ wpi::json RomiStatus::ReadRomiConfigFile(std::function<void(std::string_view)> o
     j = wpi::json::parse(is);
   } catch(const wpi::json::parse_error& e) {
     onFail("Parse error in config file");
-    fmt::print(stderr, "Parse error in {}: byte {}: {}\n", ROMI_JSON,
-               e.byte, e.what());
+    fmt::print(stderr, "Parse error in {}: byte {}: {}\n", ROMI_JSON, e.byte,
+               e.what());
     return wpi::json();
   }
 
   if (!j.is_object()) {
     onFail("Top level must be a JSON object");
-    fmt::print(stderr, "{}", "must be a JSON object\n");
+    fmt::print(stderr, "must be a JSON object\n");
     return wpi::json();
   }
 

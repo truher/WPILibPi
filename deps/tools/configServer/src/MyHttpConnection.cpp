@@ -9,11 +9,12 @@
 
 #include <fmt/format.h>
 #include <wpi/SmallVector.h>
-#include <wpi/UrlParser.h>
+#include <wpi/StringExtras.h>
 #include <wpi/fs.h>
 #include <wpi/raw_ostream.h>
-#include <wpi/raw_uv_ostream.h>
-#include <wpi/uv/Request.h>
+#include <wpinet/UrlParser.h>
+#include <wpinet/raw_uv_ostream.h>
+#include <wpinet/uv/Request.h>
 
 #include "WebSocketHandlers.h"
 
@@ -40,7 +41,7 @@ MyHttpConnection::MyHttpConnection(std::shared_ptr<wpi::uv::Stream> stream)
     : HttpServerConnection(stream), m_websocketHelper(m_request) {
   // Handle upgrade event
   m_websocketHelper.upgrade.connect([this] {
-    //fmt::print(stderr, "{}", "got websocket upgrade\n");
+    //fmt::print(stderr, "got websocket upgrade\n");
     // Disconnect HttpServerConnection header reader
     m_dataConn.disconnect();
     m_messageCompleteConn.disconnect();
@@ -55,7 +56,7 @@ MyHttpConnection::MyHttpConnection(std::shared_ptr<wpi::uv::Stream> stream)
     // Connect the websocket open event to our connected event.
     // Pass self to delay destruction until this callback happens
     ws->open.connect_extended([self, s = ws.get()](auto conn, auto) {
-      fmt::print(stderr, "{}", "websocket connected\n");
+      fmt::print(stderr, "websocket connected\n");
       InitWs(*s);
       conn.disconnect();  // one-shot
     });
@@ -132,8 +133,14 @@ void MyHttpConnection::SendFileResponse(int code, std::string_view codeText,
                                         std::string_view extraHeader) {
   // open file
   std::error_code ec;
-  int infd = fs::OpenFileForRead(filename, ec);
+  auto infile = fs::OpenFileForRead(filename, ec);
   if (ec) {
+    SendError(404);
+    return;
+  }
+  int infd = fs::FileToFd(infile, ec, fs::OF_None);
+  if (ec) {
+    fs::CloseFile(infile);
     SendError(404);
     return;
   }

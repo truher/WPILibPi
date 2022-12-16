@@ -9,7 +9,9 @@
 #include <unistd.h>
 
 #include <fmt/format.h>
+#include <wpi/SmallString.h>
 #include <wpi/StringExtras.h>
+#include <wpi/fmt/raw_ostream.h>
 #include <wpi/fs.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
@@ -56,11 +58,7 @@ void Application::Set(std::string_view appType,
   } else if (appType == "custom") {
     return;
   } else {
-    wpi::SmallString<64> msg;
-    msg = "unrecognized application type '";
-    msg += appType;
-    msg += "'";
-    onFail(msg);
+    onFail(fmt::format("unrecognized application type '{}'", appType));
     return;
   }
 
@@ -72,13 +70,13 @@ void Application::Set(std::string_view appType,
       onFail("could not write " EXEC_HOME "/runCamera");
       return;
     }
-    os << "#!/bin/sh\n";
-    os << TYPE_TAG << ' ' << appType << '\n';
-    os << "echo \"Waiting 5 seconds...\"\n";
-    os << "sleep 5\n";
-    if (!appDir.empty()) os << "cd " << appDir << '\n';
-    if (!appEnv.empty()) os << appEnv << '\n';
-    os << "exec " << appCommand << '\n';
+    fmt::print(os, "#!/bin/sh\n");
+    fmt::print(os, "{} {}\n", TYPE_TAG, appType);
+    fmt::print(os, "echo \"Waiting 5 seconds...\"\n");
+    fmt::print(os, "sleep 5\n");
+    if (!appDir.empty()) fmt::print(os, "cd {}\n", appDir);
+    if (!appEnv.empty()) fmt::print(os, "{}\n", appEnv);
+    fmt::print(os, "exec {}\n", appCommand);
   }
 
   // terminate vision process so it reloads
@@ -97,18 +95,11 @@ void Application::FinishUpload(std::string_view appType, UploadHelper& helper,
   } else if (appType == "upload-python") {
     filename = "/uploaded.py";
   } else {
-    wpi::SmallString<64> msg;
-    msg = "cannot upload application type '";
-    msg += appType;
-    msg += "'";
-    onFail(msg);
+    onFail(fmt::format("cannot upload application type '{}'", appType));
     helper.Close();
     return;
   }
 
-  wpi::SmallString<64> pathname;
-  pathname = EXEC_HOME;
-  pathname += filename;
   int fd = helper.GetFD();
 
   // change ownership
@@ -125,6 +116,8 @@ void Application::FinishUpload(std::string_view appType, UploadHelper& helper,
 
   // close temporary file
   helper.Close();
+
+  auto pathname = fmt::format("{}{}", EXEC_HOME, filename);
 
   // remove old file (need to do this as we can't overwrite a running exe)
   if (unlink(pathname.c_str()) == -1) {
@@ -151,7 +144,7 @@ wpi::json Application::GetStatusJson() {
   std::error_code ec;
   wpi::raw_fd_istream is(EXEC_HOME "/runCamera", ec);
   if (ec) {
-    fmt::print(stderr, "{}", "could not read " EXEC_HOME "/runCamera\n");
+    fmt::print(stderr, "could not read {}/runCamera\n", EXEC_HOME);
     return j;
   }
 

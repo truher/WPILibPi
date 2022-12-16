@@ -17,14 +17,15 @@
 #include <fmt/format.h>
 #include <wpi/SmallString.h>
 #include <wpi/StringExtras.h>
+#include <wpi/fmt/raw_ostream.h>
 #include <wpi/json.h>
 #include <wpi/raw_ostream.h>
-#include <wpi/uv/Buffer.h>
-#include <wpi/uv/FsEvent.h>
-#include <wpi/uv/Pipe.h>
-#include <wpi/uv/Process.h>
-#include <wpi/uv/Timer.h>
-#include <wpi/uv/Work.h>
+#include <wpinet/uv/Buffer.h>
+#include <wpinet/uv/FsEvent.h>
+#include <wpinet/uv/Pipe.h>
+#include <wpinet/uv/Process.h>
+#include <wpinet/uv/Timer.h>
+#include <wpinet/uv/Work.h>
 
 namespace uv = wpi::uv;
 
@@ -141,14 +142,14 @@ void VisionStatus::RunSvc(const char* cmd,
     if (fd == -1) {
       wpi::raw_svector_ostream os(r->err);
       if (errno == ENXIO)
-        os << "unable to control service: supervise not running";
+        fmt::print(os, "unable to control service: supervise not running");
       else
-        os << "unable to control service: " << std::strerror(errno);
+        fmt::print(os, "unable to control service: {}", std::strerror(errno));
     } else {
       fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
       if (write(fd, r->cmd, std::strlen(r->cmd)) == -1) {
         wpi::raw_svector_ostream os(r->err);
-        os << "error writing command: " << std::strerror(errno);
+        fmt::print(os, "error writing command: {}", std::strerror(errno));
       }
       close(fd);
     }
@@ -195,9 +196,9 @@ void VisionStatus::UpdateStatus() {
     int fd = open(SERVICE "/supervise/ok", O_WRONLY | O_NDELAY);
     if (fd == -1) {
       if (errno == ENXIO)
-        os << "supervise not running";
+        fmt::print(os, "supervise not running");
       else
-        os << "unable to open supervise/ok: " << std::strerror(errno);
+        fmt::print(os, "unable to open supervise/ok: {}", std::strerror(errno));
       return;
     }
     close(fd);
@@ -205,18 +206,19 @@ void VisionStatus::UpdateStatus() {
     // read the status data
     fd = open(SERVICE "/supervise/status", O_RDONLY | O_NDELAY);
     if (fd == -1) {
-      os << "unable to open supervise/status: " << std::strerror(errno);
+      fmt::print(os, "unable to open supervise/status: {}",
+                 std::strerror(errno));
       return;
     }
     uint8_t status[18];
     int nr = read(fd, status, sizeof status);
     close(fd);
     if (nr < static_cast<int>(sizeof status)) {
-      os << "unable to read supervise/status: ";
+      fmt::print(os, "unable to read supervise/status: ");
       if (nr == -1)
-        os << std::strerror(errno);
+        fmt::print(os, std::strerror(errno));
       else
-        os << "bad format";
+        fmt::print(os, "bad format");
       return;
     }
 
@@ -246,13 +248,13 @@ void VisionStatus::UpdateStatus() {
 
     // convert to status string
     if (pid)
-      os << fmt::format("up (pid {}) ", pid);
+      fmt::print(os, "up (pid {}) ", pid);
     else
-      os << "down ";
-    os << fmt::format("{} seconds", when);
-    if (pid && paused) os << ", paused";
-    if (!pid && want == 'u') os << ", want up";
-    if (pid && want == 'd') os << ", want down";
+      fmt::print(os, "down ");
+    fmt::print(os, "{} seconds", when);
+    if (pid && paused) fmt::print(os, ", paused");
+    if (!pid && want == 'u') fmt::print(os, ", want up");
+    if (pid && want == 'd') fmt::print(os, ", want down");
 
     if (pid) r->enabled = true;
   });

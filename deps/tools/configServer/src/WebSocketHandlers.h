@@ -5,9 +5,10 @@
 #ifndef RPICONFIGSERVER_WEBSOCKETHANDLERS_H_
 #define RPICONFIGSERVER_WEBSOCKETHANDLERS_H_
 
-#include <string_view>
+#include <stdint.h>
 
-#include <wpi/span.h>
+#include <span>
+#include <string_view>
 
 namespace wpi {
 class WebSocket;
@@ -15,6 +16,6 @@ class WebSocket;
 
 void InitWs(wpi::WebSocket& ws);
 void ProcessWsText(wpi::WebSocket& ws, std::string_view msg);
-void ProcessWsBinary(wpi::WebSocket& ws, wpi::span<const uint8_t> msg);
+void ProcessWsBinary(wpi::WebSocket& ws, std::span<const uint8_t> msg);
 
 #endif  // RPICONFIGSERVER_WEBSOCKETHANDLERS_H_
