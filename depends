@@ -7,7 +7,7 @@ zerofree
 zip
 mkdosfs:dosfstools
 capsh:libcap2-bin
-bsdtar
+bsdtar:libarchive-tools
 grep
 rsync
 xz:xz-utils
@@ -17,10 +17,14 @@ file
 git
 lsmod:kmod
 bc
+qemu-nbd:qemu-utils
+kpartx
+gpg
+pigz
 pkg-config
 gcc:build-essential
 cmake
 python3
 ant
 sudo
-java:openjdk-11-jdk
+java:openjdk-17-jdk

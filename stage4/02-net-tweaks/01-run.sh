@@ -1,21 +1,26 @@
 #!/bin/bash -e
 
-install -v -d					"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
-install -v -m 644 files/wait.conf		"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d/"
-
 install -v -d					"${ROOTFS_DIR}/etc/wpa_supplicant"
 install -v -m 600 files/wpa_supplicant.conf	"${ROOTFS_DIR}/etc/wpa_supplicant/"
 
 # disable wireless
 install -m 644 files/raspi-blacklist.conf "${ROOTFS_DIR}/etc/modprobe.d/"
 
+on_chroot << EOF
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_wait 0
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_netconf 1
+EOF
+
 if [ -v WPA_COUNTRY ]; then
-	echo "country=${WPA_COUNTRY}" >> "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
+	on_chroot <<- EOF
+		SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_wifi_country "${WPA_COUNTRY}"
+	EOF
 fi
 
 if [ -v WPA_ESSID ] && [ -v WPA_PASSWORD ]; then
 on_chroot <<EOF
-wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" >> "/etc/wpa_supplicant/wpa_supplicant.conf"
+set -o pipefail
+wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" | tee -a "/etc/wpa_supplicant/wpa_supplicant.conf"
 EOF
 elif [ -v WPA_ESSID ]; then
 cat >> "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf" << EOL

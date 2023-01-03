@@ -24,31 +24,6 @@ s/^#?[[:blank:]]*PasswordAuthentication[[:blank:]]*yes[[:blank:]]*$/PasswordAuth
 fi
 
 #
-# Install OpenJDK
-#
-pushd "${STAGE_WORK_DIR}"
-wget -nc -nv \
-    https://github.com/wpilibsuite/raspbian-openjdk/releases/download/v2019-11.0.1-1/jdk_11.0.1-strip.tar.gz
-popd
-
-mkdir -p "${ROOTFS_DIR}/usr/lib/jvm"
-pushd "${ROOTFS_DIR}/usr/lib/jvm"
-tar xzf "${STAGE_WORK_DIR}/jdk_11.0.1-strip.tar.gz" \
-    --exclude=\*.diz \
-    --exclude=src.zip \
-    --transform=s/^jdk/jdk-11.0.1/
-popd
-cp files/jdk-11.0.1.jinfo "${ROOTFS_DIR}/usr/lib/jvm/.jdk-11.0.1.jinfo"
-install -m 644 files/ld.so.conf.d/*.conf "${ROOTFS_DIR}/etc/ld.so.conf.d/"
-
-on_chroot << EOF
-cd /usr/lib/jvm
-grep /usr/lib/jvm .jdk-11.0.1.jinfo | awk '{ print "update-alternatives --install /usr/bin/" \$2 " " \$2 " " \$3 " 2"; }' | bash
-update-java-alternatives -s jdk-11.0.1
-ldconfig
-EOF
-
-#
 # Set up for read-only file system
 #
 on_chroot << EOF
@@ -95,10 +70,14 @@ on_chroot <<EOF
 for GRP in input spi i2c gpio; do
 	groupadd -f -r "\$GRP"
 done
-for GRP in adm dialout cdrom audio users sudo video games plugdev input gpio spi i2c netdev; do
+for GRP in adm dialout cdrom audio users sudo video games plugdev input gpio spi i2c netdev render; do
   adduser $FIRST_USER_NAME \$GRP
 done
 EOF
+
+if [ -f "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd" ]; then
+  sed -i "s/^pi /$FIRST_USER_NAME /" "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
+fi
 
 on_chroot << EOF
 setupcon --force --save-only -v
