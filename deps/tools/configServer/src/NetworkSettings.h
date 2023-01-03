@@ -10,7 +10,7 @@
 #include <string_view>
 
 #include <wpi/Signal.h>
-#include <wpi/uv/Loop.h>
+#include <wpinet/uv/Loop.h>
 
 namespace wpi {
 class json;
@@ -32,8 +32,8 @@ class NetworkSettings {
   enum Mode { kDhcp, kStatic, kDhcpStatic };
 
   void Set(Mode mode, std::string_view address, std::string_view mask,
-           std::string_view gateway, std::string_view dns, WifiMode wifiAPMode,
-           int wifiChannel, std::string_view wifiSsid,
+           std::string_view gateway, std::string_view dns,
+           WifiMode wifiAPMode, int wifiChannel, std::string_view wifiSsid,
            std::string_view wifiWpa2, Mode wifiMode,
            std::string_view wifiAddress, std::string_view wifiMask,
            std::string_view wifiGateway, std::string_view wifiDns,

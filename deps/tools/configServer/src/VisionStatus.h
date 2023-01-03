@@ -12,7 +12,7 @@
 
 #include <cscore.h>
 #include <wpi/Signal.h>
-#include <wpi/uv/Loop.h>
+#include <wpinet/uv/Loop.h>
 
 namespace wpi {
 class json;

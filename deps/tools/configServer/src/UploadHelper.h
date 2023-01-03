@@ -8,10 +8,9 @@
 #include <stdint.h>
 
 #include <functional>
+#include <span>
+#include <string>
 #include <string_view>
-
-#include <wpi/SmallString.h>
-#include <wpi/span.h>
 
 class UploadHelper {
  public:
@@ -31,11 +30,11 @@ class UploadHelper {
 
   bool Open(std::string_view filename, bool text,
             std::function<void(std::string_view)> onFail);
-  void Write(wpi::span<const uint8_t> contents);
+  void Write(std::span<const uint8_t> contents);
   void Close();
 
  private:
-  wpi::SmallString<128> m_filename;
+  std::string m_filename;
   int m_fd = -1;
   bool m_text;
   bool m_hasEol;

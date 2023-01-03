@@ -13,12 +13,13 @@
 #include <wpi/MathExtras.h>
 #include <wpi/SmallString.h>
 #include <wpi/StringExtras.h>
+#include <wpi/fmt/raw_ostream.h>
 #include <wpi/fs.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
-#include <wpi/uv/Process.h>
-#include <wpi/uv/util.h>
+#include <wpinet/uv/Process.h>
+#include <wpinet/uv/util.h>
 
 namespace uv = wpi::uv;
 
@@ -80,22 +81,14 @@ static std::string BuildDhcpcdSetting(
   // address
   in_addr addressAddr;
   if (wpi::uv::NameToAddr(address, &addressAddr) != 0) {
-    wpi::SmallString<128> err;
-    err += "invalid address '";
-    err += address;
-    err += "'";
-    onFail(err);
+    onFail(fmt::format("invalid address '{}'", address));
     return {};
   }
   wpi::uv::AddrToName(addressAddr, &addressOut);
 
   // mask
   if (!NetmaskToCidr(mask, &cidr)) {
-    wpi::SmallString<128> err;
-    err += "invalid netmask '";
-    err += mask;
-    err += "'";
-    onFail(err);
+    onFail(fmt::format("invalid netmask '{}'", mask));
     return {};
   }
 
@@ -112,11 +105,7 @@ static std::string BuildDhcpcdSetting(
   for (auto dnsStr : dnsStrs) {
     in_addr dnsAddr;
     if (wpi::uv::NameToAddr(dnsStr, &dnsAddr) != 0) {
-      wpi::SmallString<128> err;
-      err += "invalid DNS address '";
-      err += dnsStr;
-      err += "'";
-      onFail(err);
+      onFail(fmt::format("invalid DNS address '{}'", dnsStr));
       return {};
     }
     wpi::uv::AddrToName(dnsAddr, &oneDnsOut);
@@ -130,23 +119,25 @@ static std::string BuildDhcpcdSetting(
   // write generated config
   switch (mode) {
     case NetworkSettings::kDhcp:
-      os << '\n';  // nothing required
+      fmt::print(os, "\n");  // nothing required
       break;
     case NetworkSettings::kStatic:
-      os << "interface " << iface << '\n';
-      os << fmt::format("static ip_address={}/{}\n", addressOut, cidr);
-      if (!gatewayOut.empty()) os << "static routers=" << gatewayOut << '\n';
+      fmt::print(os, "interface {}\n", iface);
+      fmt::print(os, "static ip_address={}/{}\n", addressOut, cidr);
+      if (!gatewayOut.empty())
+        fmt::print(os, "static routers={}\n", gatewayOut);
       if (!dnsOut.empty())
-        os << "static domain_name_servers=" << dnsOut << '\n';
+        fmt::print(os, "static domain_name_servers={}\n", dnsOut);
       break;
     case NetworkSettings::kDhcpStatic:
-      os << "profile static_" << iface << '\n';
-      os << fmt::format("static ip_address={}/{}\n", addressOut, cidr);
-      if (!gatewayOut.empty()) os << "static routers=" << gatewayOut << '\n';
+      fmt::print(os, "profile static_{}\n", iface);
+      fmt::print(os, "static ip_address={}/{}\n", addressOut, cidr);
+      if (!gatewayOut.empty())
+        fmt::print(os, "static routers={}\n", gatewayOut);
       if (!dnsOut.empty())
-        os << "static domain_name_servers=" << dnsOut << '\n';
-      os << "interface " << iface << '\n';
-      os << "fallback static_" << iface << '\n';
+        fmt::print(os, "static domain_name_servers={}\n", dnsOut);
+      fmt::print(os, "interface {}\n", iface);
+      fmt::print(os, "fallback static_{}\n", iface);
       break;
   }
   return os.str();
@@ -218,17 +209,16 @@ void NetworkSettings::Set(Mode mode, std::string_view address,
         onFail("could not write " DHCPCD_CONF);
         return;
       }
-      for (auto&& line : lines) os << line << '\n';
+      for (auto&& line : lines) fmt::print(os, "{}\n", line);
 
       // write marker
-      os << GEN_MARKER << '\n';
+      fmt::print(os, "{}\n", GEN_MARKER);
 
       // write generated config
-      os << eth0;
-      os << '\n';
-      os << wlan0;
+      fmt::print(os, "{}\n", eth0);
+      fmt::print(os, "{}", wlan0);
       if (wifiAPMode == kAccessPoint) {
-        os << "nohook wpa_supplicant\n";
+        fmt::print(os, "nohook wpa_supplicant\n");
       }
     }
   }
@@ -240,11 +230,7 @@ void NetworkSettings::Set(Mode mode, std::string_view address,
     // take the 3 parts of IP range
     in_addr addressAddr;
     if (wpi::uv::NameToAddr(wifiAddress, &addressAddr) != 0) {
-      wpi::SmallString<128> err;
-      err += "invalid address '";
-      err += wifiAddress;
-      err += "'";
-      onFail(err);
+      onFail(fmt::format("invalid address '{}'", wifiAddress));
       return;
     }
     wpi::SmallString<32> addressOut;
@@ -257,9 +243,9 @@ void NetworkSettings::Set(Mode mode, std::string_view address,
       onFail("could not write " DNSMASQ_CONF);
       return;
     }
-    os << "interface=wlan0\n";
-    os << "dhcp-range=" << addr3part << ".100," << addr3part << ".200,"
-       << wifiMask << ",5m\n";
+    fmt::print(os, "interface=wlan0\n");
+    fmt::print(os, "dhcp-range={}.100,{}.200,{},5m\n", addr3part, addr3part,
+               wifiMask);
   } else {
     // remove dnsmasq config file
     unlink(DNSMASQ_CONF);
@@ -275,20 +261,20 @@ void NetworkSettings::Set(Mode mode, std::string_view address,
       onFail("could not write " HOSTAPD_CONF);
       return;
     }
-    os << "interface=wlan0\n";
-    os << "hw_mode=g\n";
-    os << fmt::format("channel={}\n", wifiChannel);
-    os << "wmm_enabled=0\n";
-    os << "macaddr_acl=0\n";
-    os << "auth_algs=1\n";
-    os << "ignore_broadcast_ssid=0\n";
-    os << "ssid=" << wifiSsid << '\n';
+    fmt::print(os, "interface=wlan0\n");
+    fmt::print(os, "hw_mode=g\n");
+    fmt::print(os, "channel={}\n", wifiChannel);
+    fmt::print(os, "wmm_enabled=0\n");
+    fmt::print(os, "macaddr_acl=0\n");
+    fmt::print(os, "auth_algs=1\n");
+    fmt::print(os, "ignore_broadcast_ssid=0\n");
+    fmt::print(os, "ssid={}\n", wifiSsid);
     if (!wifiWpa2.empty()) {
-      os << "wpa=2\n";
-      os << "wpa_key_mgmt=WPA-PSK\n";
-      os << "wpa_pairwise=TKIP\n";
-      os << "rsn_pairwise=CCMP\n";
-      os << "wpa_passphrase=" << wifiWpa2 << '\n';
+      fmt::print(os, "wpa=2\n");
+      fmt::print(os, "wpa_key_mgmt=WPA-PSK\n");
+      fmt::print(os, "wpa_pairwise=TKIP\n");
+      fmt::print(os, "rsn_pairwise=CCMP\n");
+      fmt::print(os, "wpa_passphrase={}\n", wifiWpa2);
     }
   } else {
     // remove hostapd config file
@@ -325,20 +311,20 @@ void NetworkSettings::Set(Mode mode, std::string_view address,
         onFail("could not write " WPA_SUPPLICANT_CONF);
         return;
       }
-      for (auto&& line : lines) os << line << '\n';
+      for (auto&& line : lines) fmt::print(os, "{}\n", line);
 
       // write marker
-      os << GEN_MARKER << '\n';
+      fmt::print(os, "{}\n", GEN_MARKER);
 
       // write generated config
-      os << "network={\n";
-      os << "    ssid=\"" << wifiSsid << "\"\n";
+      fmt::print(os, "network={\n");
+      fmt::print(os, "    ssid=\"{}\"\n", wifiSsid);
       if (!wifiWpa2.empty()) {
-        os << "    psk=\"" << wifiWpa2 << "\"\n";
+        fmt::print(os, "    psk=\"{}\"\n", wifiWpa2);
       } else {
-        os << "    key_mgmt=NONE\n";
+        fmt::print(os, "    key_mgmt=NONE\n");
       }
-      os << "}\n";
+      fmt::print(os, "}\n");
     }
   }
 
@@ -400,7 +386,7 @@ wpi::json NetworkSettings::GetStatusJson() {
     std::error_code ec;
     wpi::raw_fd_istream is(DHCPCD_CONF, ec);
     if (ec) {
-      wpi::errs() << "could not read " DHCPCD_CONF "\n";
+      fmt::print(stderr, "could not read {}\n", DHCPCD_CONF);
       return wpi::json();
     }
 
@@ -424,7 +410,7 @@ wpi::json NetworkSettings::GetStatusJson() {
         if (auto cidrInt = wpi::parse_integer<unsigned int>(cidrStr, 10)) {
           wpi::SmallString<64> netmaskBuf;
           j[wlan ? "wifiNetworkMask" : "networkMask"] =
-              CidrToNetmask(cidrInt.value(), netmaskBuf);
+              CidrToNetmask(*cidrInt, netmaskBuf);
         }
       } else if (wpi::starts_with(line, "static routers")) {
         j[wlan ? "wifiNetworkGateway" : "networkGateway"] =
@@ -466,7 +452,7 @@ wpi::json NetworkSettings::GetStatusJson() {
     std::error_code ec;
     wpi::raw_fd_istream is(WPA_SUPPLICANT_CONF, ec);
     if (ec) {
-      wpi::errs() << "could not read " WPA_SUPPLICANT_CONF "\n";
+      fmt::print(stderr, "could not read {}\n", WPA_SUPPLICANT_CONF);
       return j;
     }
 
@@ -478,9 +464,13 @@ wpi::json NetworkSettings::GetStatusJson() {
       if (!foundMarker) continue;
       if (line.empty()) continue;
       if (wpi::contains(line, "ssid")) {
-        j["wifiSsid"] = wpi::drop_back(wpi::drop_front(wpi::trim(wpi::split(line, '=').second)));
+        j["wifiSsid"] =
+            wpi::drop_back(wpi::drop_front(wpi::trim(wpi::split(line,
+                                                                '=').second)));
       } else if (wpi::contains(line, "psk")) {
-        j["wifiWpa2"] = wpi::drop_back(wpi::drop_front(wpi::trim(wpi::split(line, '=').second)));
+        j["wifiWpa2"] =
+            wpi::drop_back(wpi::drop_front(wpi::trim(wpi::split(line,
+                                                                '=').second)));
       } else if (wpi::contains(line, "key_mgmt")) {
         j["wifiWpa2"] = "";
       }

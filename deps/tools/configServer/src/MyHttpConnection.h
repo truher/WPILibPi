@@ -8,9 +8,9 @@
 #include <memory>
 #include <string_view>
 
-#include <wpi/HttpServerConnection.h>
-#include <wpi/WebSocketServer.h>
-#include <wpi/uv/Stream.h>
+#include <wpinet/HttpServerConnection.h>
+#include <wpinet/WebSocketServer.h>
+#include <wpinet/uv/Stream.h>
 
 class MyHttpConnection : public wpi::HttpServerConnection,
                          public std::enable_shared_from_this<MyHttpConnection> {

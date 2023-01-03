@@ -134,9 +134,9 @@ void SystemStatus::UpdateMemory() {
     amtStr = wpi::trim(amtStr);
     if (auto amt = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
       if (name == "MemFree") {
-        m_memoryFree.Add(amt.value());
+        m_memoryFree.Add(*amt);
       } else if (name == "MemAvailable") {
-        m_memoryAvail.Add(amt.value());
+        m_memoryAvail.Add(*amt);
       }
     }
   }
@@ -159,25 +159,25 @@ void SystemStatus::UpdateCpu() {
       // individual values we care about
       amtStr = wpi::ltrim(amtStr);
       if (auto v = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
-        data.user = v.value();
+        data.user = *v;
       } else {
         break;
       }
       amtStr = wpi::ltrim(amtStr);
       if (auto v = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
-        data.nice = v.value();
+        data.nice = *v;
       } else {
         break;
       }
       amtStr = wpi::ltrim(amtStr);
       if (auto v = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
-        data.system = v.value();
+        data.system = *v;
       } else {
         break;
       }
       amtStr = wpi::ltrim(amtStr);
       if (auto v = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
-        data.idle = v.value();
+        data.idle = *v;
       } else {
         break;
       }
@@ -187,7 +187,7 @@ void SystemStatus::UpdateCpu() {
       for (;;) {
         amtStr = wpi::ltrim(amtStr);
         if (auto amt = wpi::consume_integer<uint64_t>(&amtStr, 10)) {
-          data.total += amt.value();
+          data.total += *amt;
         } else {
           break;
         }
@@ -222,16 +222,12 @@ void SystemStatus::UpdateNetwork() {
 
     // receive bytes
     if (auto amt = wpi::parse_integer<uint64_t>(amtStrs[0], 10)) {
-      data.recvBytes += amt.value();
-    } else {
-      continue;
+      data.recvBytes += *amt;
     }
 
     // transmit bytes
     if (auto amt = wpi::parse_integer<uint64_t>(amtStrs[8], 10)) {
-      data.xmitBytes += amt.value();
-    } else {
-      continue;
+      data.xmitBytes += *amt;
     }
   }
 
@@ -248,7 +244,7 @@ void SystemStatus::UpdateTemp() {
     if (line.empty()) break;
 
     if (auto amt = wpi::parse_integer<uint64_t>(line, 10)) {
-      m_temp.Add(amt.value());
+      m_temp.Add(*amt);
     }
   }
 }

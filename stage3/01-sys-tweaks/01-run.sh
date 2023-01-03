@@ -42,27 +42,29 @@ pushd ${DOWNLOAD_DIR}
 
 # raspbian toolchain
 wget -nc -nv \
-    https://github.com/wpilibsuite/raspbian-toolchain/releases/download/v2.1.0/Raspbian10-Linux-i386-Toolchain-8.3.0.tar.gz
+    https://github.com/wpilibsuite/opensdk/releases/download/v2023-7/armhf-raspi-bullseye-2023-i686-linux-gnu-Toolchain-10.2.0.tgz
 
 # opencv sources
 wget -nc -nv \
-    https://github.com/opencv/opencv/archive/4.5.2.tar.gz
+    https://github.com/opencv/opencv/archive/4.6.0.tar.gz
+wget -nc -nv -O contrib-4.6.0.tar.gz \
+    https://github.com/opencv/opencv_contrib/archive/4.6.0.tar.gz
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2022.4.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/archive/v2023.1.1.tar.gz
 
 # pynetworktables
-wget -nc -nv -O pynetworktables.tar.gz \
-    https://github.com/robotpy/pynetworktables/archive/2021.0.0.tar.gz
+#wget -nc -nv -O pynetworktables.tar.gz \
+#    https://github.com/robotpy/pynetworktables/archive/2021.0.0.tar.gz
 
 # robotpy-cscore
-wget -nc -nv -O robotpy-cscore.tar.gz \
-    https://github.com/robotpy/robotpy-cscore/archive/2022.0.3.tar.gz
+#wget -nc -nv -O robotpy-cscore.tar.gz \
+#    https://github.com/robotpy/robotpy-cscore/archive/2022.0.3.tar.gz
 
 # pybind11 submodule of robotpy-cscore
-wget -nc -nv -O pybind11.tar.gz \
-    https://github.com/robotpy/pybind11/archive/67b55bcf7887aad358a6bc91c73e07d1920e96bd.tar.gz
+#wget -nc -nv -O pybind11.tar.gz \
+#    https://github.com/robotpy/pybind11/archive/67b55bcf7887aad358a6bc91c73e07d1920e96bd.tar.gz
 
 # pixy2
 wget -nc -nv -O pixy2.tar.gz \
@@ -78,8 +80,9 @@ install -v -d ${EXTRACT_DIR}
 pushd ${EXTRACT_DIR}
 
 # opencv
-tar xzf "${DOWNLOAD_DIR}/4.5.2.tar.gz"
-pushd opencv-4.5.2
+tar xzf "${DOWNLOAD_DIR}/4.6.0.tar.gz"
+tar xzf "${DOWNLOAD_DIR}/contrib-4.6.0.tar.gz"
+pushd opencv-4.6.0
 sed -i -e 's/javac sourcepath/javac target="1.8" source="1.8" sourcepath/' modules/java/jar/build.xml.in
 # disable extraneous data warnings; these are common with USB cameras
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg/jdmarker.c
@@ -95,19 +98,19 @@ sed -i -e 's/add_subdirectory(fieldImages)//' CMakeLists.txt
 popd
 
 # pynetworktables
-tar xzf "${DOWNLOAD_DIR}/pynetworktables.tar.gz"
-mv pynetworktables-* pynetworktables
-echo "__version__ = '2021.0.0'" > pynetworktables/_pynetworktables/_impl/version.py
+#tar xzf "${DOWNLOAD_DIR}/pynetworktables.tar.gz"
+#mv pynetworktables-* pynetworktables
+#echo "__version__ = '2021.0.0'" > pynetworktables/_pynetworktables/_impl/version.py
 
 # robotpy-cscore
-tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
-mv robotpy-cscore-* robotpy-cscore
-echo "__version__ = '2022.0.2'" > robotpy-cscore/cscore/version.py
-pushd robotpy-cscore
-rm -rf pybind11
-tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
-mv pybind11-* pybind11
-popd
+#tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
+#mv robotpy-cscore-* robotpy-cscore
+#echo "__version__ = '2022.0.2'" > robotpy-cscore/cscore/version.py
+#pushd robotpy-cscore
+#rm -rf pybind11
+#tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
+#mv pybind11-* pybind11
+#popd
 
 # pixy2
 tar xzf "${DOWNLOAD_DIR}/pixy2.tar.gz"
@@ -143,7 +146,7 @@ build_opencv () {
     rm -rf $1
     mkdir -p $1
     pushd $1
-    cmake "${EXTRACT_DIR}/opencv-4.5.2" \
+    cmake "${EXTRACT_DIR}/opencv-4.6.0" \
 	-DWITH_FFMPEG=OFF \
         -DBUILD_JPEG=ON \
         -DBUILD_TESTS=OFF \
@@ -165,6 +168,7 @@ build_opencv () {
 	-DOPENCV_GENERATE_PKGCONFIG=ON \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc$4 \
+	-DOPENCV_EXTRA_MODULES_PATH=${EXTRACT_DIR}/opencv_contrib-4.6.0/modules/aruco \
         || exit 1
     make -j${NCPU} || exit 1
     make DESTDIR=${ROOTFS_DIR} install || exit 1
@@ -205,8 +209,8 @@ build_wpilib () {
         -DCMAKE_BUILD_TYPE=$2 \
         -DCMAKE_TOOLCHAIN_FILE=${SUB_STAGE_DIR}/files/arm-pi-gnueabihf.toolchain.cmake \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
-        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-452.jar` \
-        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java452.so` \
+        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-460.jar` \
+        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java460.so` \
         -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/opencv4 \
         -DTHREADS_PTHREAD_ARG=-pthread \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc \
@@ -307,42 +311,42 @@ popd
 #
 
 #sh -c "cd ${EXTRACT_DIR}/pynetworktables && tar cf - networktables ntcore" | sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/ && tar xf -"
-on_chroot << EOF
-pip3 install setuptools
-pushd /usr/src/pynetworktables
-python3 setup.py build
-python3 setup.py install
-python3 setup.py clean
-popd
-EOF
+#on_chroot << EOF
+#pip3 install setuptools
+#pushd /usr/src/pynetworktables
+#python3 setup.py build
+#python3 setup.py install
+#python3 setup.py clean
+#popd
+#EOF
 
 #
 # Build robotpy-cscore
 # this build is pretty cpu-intensive, so we don't want to build it in a chroot,
 # and setup.py doesn't support cross-builds, so build it manually
 #
-pushd ${EXTRACT_DIR}/robotpy-cscore
+#pushd ${EXTRACT_DIR}/robotpy-cscore
 
 # install Python sources
-sh -c 'tar cf - cscore' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages && tar xf -"
+#sh -c 'tar cf - cscore' | \
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages && tar xf -"
 
 # install blank _init_cscore.py
 touch "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/cscore/_init_cscore.py"
 
 # build module
-arm-raspbian10-linux-gnueabihf-g++ \
-    --sysroot=${ROOTFS_DIR} \
-    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++17 \
-    -o "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/_cscore.cpython-37m-arm-linux-gnueabihf.so" \
-    -Ipybind11/include \
-    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cscore wpiutil` \
-    src/_cscore.cpp \
-    src/ndarray_converter.cpp \
-    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs cscore wpiutil` \
-    || exit 1
-
-popd
+#arm-raspbian10-linux-gnueabihf-g++ \
+#    --sysroot=${ROOTFS_DIR} \
+#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++17 \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/_cscore.cpython-37m-arm-linux-gnueabihf.so" \
+#    -Ipybind11/include \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cscore wpiutil` \
+#    src/_cscore.cpp \
+#    src/ndarray_converter.cpp \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs cscore wpiutil` \
+#    || exit 1
+#
+#popd
 
 #
 # Build pixy2
@@ -366,9 +370,9 @@ rm -rf "${EXTRACT_DIR}/pixy2/build"
 # Split debug info
 
 split_debug () {
-    arm-raspbian10-linux-gnueabihf-objcopy --only-keep-debug $1 $1.debug
-    arm-raspbian10-linux-gnueabihf-strip -g $1
-    arm-raspbian10-linux-gnueabihf-objcopy --add-gnu-debuglink=$1.debug $1
+    armv6-bullseye-linux-gnueabihf-objcopy --only-keep-debug $1 $1.debug
+    armv6-bullseye-linux-gnueabihf-strip -g $1
+    armv6-bullseye-linux-gnueabihf-objcopy --add-gnu-debuglink=$1.debug $1
 }
 
 split_debug_so () {
