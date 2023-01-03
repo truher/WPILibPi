@@ -1,8 +1,8 @@
 cmake
-libpython3.7-minimal
-libpython3.7-dev
-python3.7-minimal
-python3.7-dev
+libpython3.9-minimal
+libpython3.9-dev
+python3.9-minimal
+python3.9-dev
 python3-distutils
 python3-jinja2
 python3-numpy
@@ -12,4 +12,3 @@ swig
 pigpio
 python-pigpio
 python3-pigpio
-python3-tflite-runtime
