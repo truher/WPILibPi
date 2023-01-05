@@ -5,10 +5,9 @@ exec_prefix=${prefix}
 includedir=${prefix}/include
 libdir=${exec_prefix}/lib
 
-Name: cameraserver
-Description: WPILib Robotics Library CameraServer
+Name: wpimath
+Description: WPILib Robotics Library Math
 Version: 2023.1.1
-Requires: cscore wpiutil
-Requires.private: ntcore
-Libs: -L${libdir} -lcameraserver
+Requires: wpiutil
+Libs: -L${libdir} -lwpimath
 Cflags: -I${includedir}

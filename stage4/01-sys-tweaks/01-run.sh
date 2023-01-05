@@ -19,32 +19,30 @@ sh -c "cd ${BASE_DIR}/deps && tar cf - tools" | \
 #
 # Build tools
 #
-export PATH=${WORK_DIR}/raspbian10/bin:${PATH}
-
 pushd "${STAGE_WORK_DIR}/tools"
 
-export CXXFLAGS="-std=c++17 --sysroot=${ROOTFS_DIR} -Wl,-rpath -Wl,${ROOTFS_DIR}/opt/vc/lib"
+export CXXFLAGS="-std=c++20 --sysroot=${ROOTFS_DIR} -Wl,-rpath -Wl,${ROOTFS_DIR}/opt/vc/lib"
 export PKG_CONFIG_DIR=
-export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/arm-linux-gnueabihf/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig:${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig
+export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/aarch64-linux-gnu/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig:${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig
 export PKG_CONFIG_SYSROOT_DIR=${ROOTFS_DIR}
 
 # setuidgids
 pushd setuidgids
-make CC=arm-raspbian10-linux-gnueabihf-gcc
+make CC=aarch64-linux-gnu-gcc
 install -m 755 setuidgids "${ROOTFS_DIR}/usr/local/bin/"
 
 popd
 
 # multiCameraServer
 pushd multiCameraServer
-make CXX=arm-raspbian10-linux-gnueabihf-g++
+make CXX=aarch64-linux-gnu-g++
 install -m 755 multiCameraServer "${ROOTFS_DIR}/usr/local/frc/bin/"
 
 popd
 
 # configServer
 pushd configServer
-make CXX=arm-raspbian10-linux-gnueabihf-g++
+make CXX=aarch64-linux-gnu-g++
 install -m 755 configServer "${ROOTFS_DIR}/usr/local/sbin/"
 
 popd
@@ -55,7 +53,7 @@ popd
 # Examples
 # install to both image and work directory (to build zips)
 #
-export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/arm-linux-gnueabihf/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig
+export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/aarch64-linux-gnu/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig
 
 sh -c "cd ${BASE_DIR}/deps && tar cf - examples" | \
     sh -c "cd ${ROOTFS_DIR}/home/${FIRST_USER_NAME} && tar xf -"
@@ -90,7 +88,7 @@ done
 
 # update Makefile to use cross-compiler and point to local dependencies
 cat > cpp-multiCameraServer/Makefile.new << EOF
-CXX=arm-raspbian10-linux-gnueabihf-g++
+CXX=aarch64-linux-gnu-g++
 DEPS_CFLAGS=`pkg-config --cflags wpilibc | sed -e "s,${ROOTFS_DIR}/usr/local/frc/,,g"`
 DEPS_LIBS=`pkg-config --libs wpilibc | sed -e "s,${ROOTFS_DIR}/usr/local/frc/,,g"`
 EOF

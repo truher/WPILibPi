@@ -21,7 +21,7 @@ find ./etc/alternatives -lname '/*.so.*' | \
   do
     echo ln -sf $(echo $(echo $l | sed 's|/[^/]*|/..|g')$(readlink $l) | sed 's/.....//') $l
   done | sh
-find ./etc/alternatives -lname '/*/arm-linux-gnueabihf/*' | \
+find ./etc/alternatives -lname '/*/aarch64-linux-gnu/*' | \
   while read l
   do
     echo ln -sf $(echo $(echo $l | sed 's|/[^/]*|/..|g')$(readlink $l) | sed 's/.....//') $l
@@ -31,7 +31,7 @@ popd
 #
 # Add symbolic link for cblas.h to /usr/include (required by OpenCV)
 #
-ln -sf arm-linux-gnueabihf/cblas.h "${ROOTFS_DIR}/usr/include/cblas.h"
+#ln -sf aarch64-linux-gnu/cblas.h "${ROOTFS_DIR}/usr/include/cblas.h"
 
 #
 # Download sources
@@ -39,10 +39,6 @@ ln -sf arm-linux-gnueabihf/cblas.h "${ROOTFS_DIR}/usr/include/cblas.h"
 DOWNLOAD_DIR=${STAGE_WORK_DIR}/download
 mkdir -p ${DOWNLOAD_DIR}
 pushd ${DOWNLOAD_DIR}
-
-# raspbian toolchain
-wget -nc -nv \
-    https://github.com/wpilibsuite/opensdk/releases/download/v2023-7/armhf-raspi-bullseye-2023-i686-linux-gnu-Toolchain-10.2.0.tgz
 
 # opencv sources
 wget -nc -nv \
@@ -80,6 +76,7 @@ install -v -d ${EXTRACT_DIR}
 pushd ${EXTRACT_DIR}
 
 # opencv
+rm -rf opencv-4.6.0
 tar xzf "${DOWNLOAD_DIR}/4.6.0.tar.gz"
 tar xzf "${DOWNLOAD_DIR}/contrib-4.6.0.tar.gz"
 pushd opencv-4.6.0
@@ -87,14 +84,16 @@ sed -i -e 's/javac sourcepath/javac target="1.8" source="1.8" sourcepath/' modul
 # disable extraneous data warnings; these are common with USB cameras
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg/jdmarker.c
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg-turbo/src/jdmarker.c
-patch -p0 < "${SUB_STAGE_DIR}/files/opencv.patch"
+#patch -p0 < "${SUB_STAGE_DIR}/files/opencv.patch"
 popd
 
 # allwpilib
 tar xzf "${DOWNLOAD_DIR}/allwpilib.tar.gz"
+rm -rf allwpilib
 mv allwpilib-* allwpilib
 pushd allwpilib
-sed -i -e 's/add_subdirectory(fieldImages)//' CMakeLists.txt
+patch -p1 < ${SUB_STAGE_DIR}/files/allwpilib.patch
+#sed -i -e 's/add_subdirectory(fieldImages)//' CMakeLists.txt
 popd
 
 # pynetworktables
@@ -114,8 +113,10 @@ popd
 
 # pixy2
 tar xzf "${DOWNLOAD_DIR}/pixy2.tar.gz"
+rm -rf pixy2
 mv pixy2-* pixy2
 rm -rf pixy2/releases
+sed -i -e 's/g++/aarch64-linux-gnu-g++/' pixy2/src/host/libpixyusb2/src/Makefile
 sed -i -e 's/^python/python3/;s/_pixy.so/_pixy.*.so/' pixy2/scripts/build_python_demos.sh
 sed -i -e 's/print/#print/' pixy2/src/host/libpixyusb2_examples/python_demos/setup.py
 
@@ -128,14 +129,8 @@ popd
 # get number of CPU cores
 NCPU=`grep -c 'cpu[0-9]' /proc/stat`
 
-# extract raspbian toolchain
-pushd ${WORK_DIR}
-tar xzf ${DOWNLOAD_DIR}/Raspbian10-Linux-i386-Toolchain-*.tar.gz
-export PATH=${WORK_DIR}/raspbian10/bin:${PATH}
-popd
-
 export PKG_CONFIG_DIR=
-export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/arm-linux-gnueabihf/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig
+export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/aarch64-linux-gnu/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig
 export PKG_CONFIG_SYSROOT_DIR=${ROOTFS_DIR}
 
 pushd ${STAGE_WORK_DIR}
@@ -149,21 +144,23 @@ build_opencv () {
     cmake "${EXTRACT_DIR}/opencv-4.6.0" \
 	-DWITH_FFMPEG=OFF \
         -DBUILD_JPEG=ON \
+        -DBUILD_TIFF=ON \
         -DBUILD_TESTS=OFF \
-        -DPython_ADDITIONAL_VERSIONS=3.7 \
+        -DPython_ADDITIONAL_VERSIONS=3.9 \
         -DBUILD_JAVA=$3 \
         -DENABLE_CXX11=ON \
         -DBUILD_SHARED_LIBS=$3 \
         -DCMAKE_BUILD_TYPE=$2 \
         -DCMAKE_DEBUG_POSTFIX=d \
-        -DCMAKE_TOOLCHAIN_FILE=${SUB_STAGE_DIR}/files/arm-pi-gnueabihf.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
         -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
+        -DCMAKE_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_MAKE_PROGRAM=make \
         -DENABLE_NEON=ON \
-        -DENABLE_VFPV3=ON \
+        -DWITH_TBB=$3 \
         -DBUILD_opencv_python3=$3 \
-        -DPYTHON3_INCLUDE_PATH=${ROOTFS_DIR}/usr/include/python3.7m \
-        -DPYTHON3_NUMPY_INCLUDE_DIRS=${ROOTFS_DIR}/usr/include/python3.7m/numpy \
+        -DPYTHON3_INCLUDE_PATH=${ROOTFS_DIR}/usr/include/python3.9 \
+        -DPYTHON3_NUMPY_INCLUDE_DIRS=${ROOTFS_DIR}/usr/include/python3.9/numpy \
         -DOPENCV_EXTRA_FLAGS_DEBUG=-Og \
 	-DOPENCV_GENERATE_PKGCONFIG=ON \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
@@ -180,19 +177,19 @@ build_opencv build/opencv-build Release ON "" || exit 1
 build_opencv build/opencv-static Release OFF "-static" || exit 1
 
 # fix up java install
-cp -p ${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/libopencv_java452*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
+cp -p ${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/libopencv_java460*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
 mkdir -p "${ROOTFS_DIR}/usr/local/frc/java"
-cp -p "${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/opencv-452.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
+cp -p "${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/opencv-460.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
 
 # the opencv build names the python .so with the build platform name
 # instead of the target platform, so rename it
-pushd "${ROOTFS_DIR}/usr/local/frc/lib/python3.7/dist-packages/cv2/python-3.7"
-mv cv2.cpython-37m-*-gnu.so cv2.cpython-37m-arm-linux-gnueabihf.so
-mv cv2d.cpython-37m-*-gnu.so cv2d.cpython-37m-arm-linux-gnueabihf.so
+pushd "${ROOTFS_DIR}/usr/local/frc/lib/python3.9/site-packages/cv2/python-3.9"
+mv cv2.cpython-39-*-gnu.so cv2.cpython-39-aarch64-linux-gnu.so
+mv cv2d.cpython-39-*-gnu.so cv2d.cpython-39-aarch64-linux-gnu.so
 popd
 
-# link python package to dist-packages
-ln -sf /usr/local/frc/lib/python3.7/dist-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/cv2"
+# link python package to site-packages
+ln -sf /usr/local/frc/lib/python3.9/site-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/cv2"
 
 #
 # Build wpiutil, cscore, ntcore, cameraserver
@@ -206,8 +203,11 @@ build_wpilib () {
         -DWITH_GUI=OFF \
         -DWITH_TESTS=OFF \
         -DWITH_SIMULATION_MODULES=OFF \
+	-DWPILIB_TARGET_WARNINGS=-Wno-deprecated-declarations \
         -DCMAKE_BUILD_TYPE=$2 \
-        -DCMAKE_TOOLCHAIN_FILE=${SUB_STAGE_DIR}/files/arm-pi-gnueabihf.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
+        -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
+        -DCMAKE_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-460.jar` \
         -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java460.so` \
@@ -231,8 +231,10 @@ build_static_wpilib() {
         -DWITH_GUI=OFF \
         -DWITH_TESTS=OFF \
         -DWITH_SIMULATION_MODULES=OFF \
+	-DWPILIB_TARGET_WARNINGS=-Wno-deprecated-declarations \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=${SUB_STAGE_DIR}/files/arm-pi-gnueabihf.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
+        -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/OpenCV \
         -DWITH_JAVA=OFF \
@@ -246,14 +248,24 @@ build_static_wpilib() {
 build_static_wpilib build/allwpilib-static || exit 1
 
 # manually install, since cmake install is a bit weirdly set up
-# built libs and headers
+install -v -d "${ROOTFS_DIR}/usr/local/frc/bin"
+install -v -d "${ROOTFS_DIR}/usr/local/frc/include"
+install -v -d "${ROOTFS_DIR}/usr/local/frc/java"
+install -v -d "${ROOTFS_DIR}/usr/local/frc/lib"
+install -v -d "${ROOTFS_DIR}/usr/local/frc-static/lib"
+
+# built libs
 sh -c 'cd build/allwpilib-build/lib && tar cf - lib*' | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/lib && tar xf -"
 sh -c 'cd build/allwpilib-build-debug/lib && tar cf - lib*' | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/lib && tar xf -"
 sh -c 'cd build/allwpilib-static/lib && tar cf - lib*' | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc-static/lib && tar xf -"
+
+# built headers
 sh -c 'cd build/allwpilib-build/hal/gen && tar cf - .' | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c 'cd build/allwpilib-build/ntcore/generated/main/native/include && tar cf - .' | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 
 # built jars
@@ -263,9 +275,25 @@ sh -c 'cd build/allwpilib-build/jar && tar cf - *.jar' | \
 # headers
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/fmtlib/include && tar cf - ." | \
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/fmtlib/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/libuv/include && tar cf - ." | \
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/ghc/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/json/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/llvm/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/memory/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/mpack/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/sigslot/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/thirdparty/libuv/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/thirdparty/tcpsockets/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/cscore/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
@@ -277,7 +305,13 @@ sh -c "cd ${EXTRACT_DIR}/allwpilib/hal/src/main/native/include && tar cf - ." | 
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/eigeninclude && tar cf - ." | \
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/drake/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/eigen/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/gcem/include && tar cf - ." | \
+    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
+sh -c "cd ${EXTRACT_DIR}/allwpilib/apriltag/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 sh -c "cd ${EXTRACT_DIR}/allwpilib/wpilibc/src/main/native/include && tar cf - ." | \
     sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
@@ -310,7 +344,7 @@ popd
 # Install pynetworktables
 #
 
-#sh -c "cd ${EXTRACT_DIR}/pynetworktables && tar cf - networktables ntcore" | sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/ && tar xf -"
+#sh -c "cd ${EXTRACT_DIR}/pynetworktables && tar cf - networktables ntcore" | sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/ && tar xf -"
 #on_chroot << EOF
 #pip3 install setuptools
 #pushd /usr/src/pynetworktables
@@ -329,16 +363,16 @@ popd
 
 # install Python sources
 #sh -c 'tar cf - cscore' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages && tar xf -"
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages && tar xf -"
 
 # install blank _init_cscore.py
-touch "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/cscore/_init_cscore.py"
+touch "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/cscore/_init_cscore.py"
 
 # build module
-#arm-raspbian10-linux-gnueabihf-g++ \
+#aarch64-bullseye-linux-gnu-g++ \
 #    --sysroot=${ROOTFS_DIR} \
 #    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++17 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/_cscore.cpython-37m-arm-linux-gnueabihf.so" \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
 #    -Ipybind11/include \
 #    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cscore wpiutil` \
 #    src/_cscore.cpp \
@@ -359,8 +393,8 @@ popd
 EOF
 
 install -m 644 "${EXTRACT_DIR}/pixy2/build/libpixyusb2/libpixy2.a" "${ROOTFS_DIR}/usr/local/frc/lib/"
-install -m 644 "${EXTRACT_DIR}/pixy2/build/python_demos/pixy.py" "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/"
-install -m 755 ${EXTRACT_DIR}/pixy2/build/python_demos/_pixy.*.so "${ROOTFS_DIR}/usr/local/lib/python3.7/dist-packages/"
+install -m 644 "${EXTRACT_DIR}/pixy2/build/python_demos/pixy.py" "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/"
+install -m 755 ${EXTRACT_DIR}/pixy2/build/python_demos/_pixy.*.so "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/"
 rm -rf "${EXTRACT_DIR}/pixy2/build"
 
 #
@@ -370,9 +404,9 @@ rm -rf "${EXTRACT_DIR}/pixy2/build"
 # Split debug info
 
 split_debug () {
-    armv6-bullseye-linux-gnueabihf-objcopy --only-keep-debug $1 $1.debug
-    armv6-bullseye-linux-gnueabihf-strip -g $1
-    armv6-bullseye-linux-gnueabihf-objcopy --add-gnu-debuglink=$1.debug $1
+    aarch64-linux-gnu-objcopy --only-keep-debug $1 $1.debug
+    aarch64-linux-gnu-strip -g $1
+    aarch64-linux-gnu-objcopy --add-gnu-debuglink=$1.debug $1
 }
 
 split_debug_so () {

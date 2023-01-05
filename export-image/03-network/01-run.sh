@@ -6,7 +6,9 @@ rm -f /etc/resolv.conf
 touch /tmp/dhcpcd.resolv.conf
 ln -s /tmp/dhcpcd.resolv.conf /etc/resolv.conf
 
-sed -i -e 's/\/run\//\/var\/run\//' /etc/systemd/system/dhcpcd5.service
+#ls -l /etc/systemd/system/dhcpcd.service.d/
+
+#sed -i -e 's/\/run\//\/var\/run\//' /etc/systemd/system/dhcpcd5.service
 
 cp /etc/dhcpcd.conf /boot/
 chown -f 0:0 /boot/dhcpcd.conf
