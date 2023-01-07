@@ -59,8 +59,8 @@
    }
  */
 
-#ifdef __RASPBIAN__
-static const char* configFile = "/boot/frc.json";
+#ifdef FRC_JSON
+static const char* configFile = FRC_JSON;
 #else
 static const char* configFile = "frc.json";
 #endif

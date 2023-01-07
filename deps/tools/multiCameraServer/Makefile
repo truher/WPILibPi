@@ -17,6 +17,7 @@
 DEPS_CFLAGS?=$(shell pkg-config --cflags cameraserver ntcore wpiutil)
 DEPS_LIBS?=$(shell pkg-config --libs --static cameraserver ntcore wpiutil)
 CXXFLAGS?=-std=c++20
+FRC_JSON?=/boot/frc.json
 
 .PHONY: all clean
 
@@ -26,4 +27,4 @@ clean:
 	rm -f multiCameraServer
 
 multiCameraServer: src/multiCameraServer.cpp
-	${CXX} -pthread -g -o $@ ${CXXFLAGS} ${DEPS_CFLAGS} $^ ${DEPS_LIBS}
+	${CXX} -pthread -g -o $@ ${CXXFLAGS} ${DEPS_CFLAGS} '-DFRC_JSON="${FRC_JSON}"' $^ ${DEPS_LIBS}
