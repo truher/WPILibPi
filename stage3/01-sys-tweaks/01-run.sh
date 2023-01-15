@@ -48,19 +48,31 @@ wget -nc -nv -O contrib-4.6.0.tar.gz \
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2023.1.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/archive/v2023.2.1.tar.gz
 
-# pynetworktables
-#wget -nc -nv -O pynetworktables.tar.gz \
-#    https://github.com/robotpy/pynetworktables/archive/2021.0.0.tar.gz
-
-# robotpy-cscore
-#wget -nc -nv -O robotpy-cscore.tar.gz \
-#    https://github.com/robotpy/robotpy-cscore/archive/2022.0.3.tar.gz
-
-# pybind11 submodule of robotpy-cscore
+## robotpy-build
+#wget -nc -nv -O robotpy-build.tar.gz \
+#    https://github.com/robotpy/robotpy-build/archive/2023.0.0.tar.gz
+#
+## pybind11
 #wget -nc -nv -O pybind11.tar.gz \
-#    https://github.com/robotpy/pybind11/archive/67b55bcf7887aad358a6bc91c73e07d1920e96bd.tar.gz
+#    https://github.com/pybind/pybind11/archive/8ece7d641ca6ce316e59fec6744b8517073bbe32.tar.gz
+#
+## robotpy-wpiutil
+#wget -nc -nv -O robotpy-wpiutil.tar.gz \
+#    https://github.com/robotpy/robotpy-wpiutil/archive/2023.1.1.0.tar.gz
+#
+## robotpy-wpinet
+#wget -nc -nv -O robotpy-wpinet.tar.gz \
+#    https://github.com/robotpy/robotpy-wpinet/archive/2023.1.1.0.tar.gz
+#
+## pyntcore
+#wget -nc -nv -O pyntcore.tar.gz \
+#    https://github.com/robotpy/pyntcore/archive/2023.1.1.0.tar.gz
+#
+## robotpy-cscore
+#wget -nc -nv -O robotpy-cscore.tar.gz \
+#    https://github.com/robotpy/robotpy-cscore/archive/2023.1.1.0.tar.gz
 
 # pixy2
 wget -nc -nv -O pixy2.tar.gz \
@@ -92,24 +104,36 @@ tar xzf "${DOWNLOAD_DIR}/allwpilib.tar.gz"
 rm -rf allwpilib
 mv allwpilib-* allwpilib
 pushd allwpilib
-patch -p1 < ${SUB_STAGE_DIR}/files/allwpilib.patch
-#sed -i -e 's/add_subdirectory(fieldImages)//' CMakeLists.txt
 popd
 
-# pynetworktables
-#tar xzf "${DOWNLOAD_DIR}/pynetworktables.tar.gz"
-#mv pynetworktables-* pynetworktables
-#echo "__version__ = '2021.0.0'" > pynetworktables/_pynetworktables/_impl/version.py
+# robotpy-build
+tar xzf "${DOWNLOAD_DIR}/robotpy-build.tar.gz"
+mv robotpy-build-* robotpy-build
+
+# pybind11
+tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
+rmdir robotpy-build/robotpy_build/pybind11
+mv pybind11-* robotpy-build/robotpy_build/pybind11
+
+# robotpy-wpiutil
+tar xzf "${DOWNLOAD_DIR}/robotpy-wpiutil.tar.gz"
+mv robotpy-wpiutil-* robotpy-wpiutil
+echo "__version__ = '2023.1.1.0'" > robotpy-wpiutil/wpiutil/version.py
+
+# robotpy-wpinet
+tar xzf "${DOWNLOAD_DIR}/robotpy-wpinet.tar.gz"
+mv robotpy-wpinet-* robotpy-wpinet
+echo "__version__ = '2023.1.1.0'" > robotpy-wpinet/wpinet/version.py
+
+# pyntcore
+tar xzf "${DOWNLOAD_DIR}/pyntcore.tar.gz"
+mv pyntcore-* pyntcore
+echo "__version__ = '2023.1.1.0'" > pyntcore/ntcore/version.py
 
 # robotpy-cscore
-#tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
-#mv robotpy-cscore-* robotpy-cscore
-#echo "__version__ = '2022.0.2'" > robotpy-cscore/cscore/version.py
-#pushd robotpy-cscore
-#rm -rf pybind11
-#tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
-#mv pybind11-* pybind11
-#popd
+tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
+mv robotpy-cscore-* robotpy-cscore
+echo "__version__ = '2023.1.1.0'" > robotpy-cscore/cscore/version.py
 
 # pixy2
 tar xzf "${DOWNLOAD_DIR}/pixy2.tar.gz"
@@ -189,7 +213,7 @@ mv cv2d.cpython-39-*-gnu.so cv2d.cpython-39-aarch64-linux-gnu.so
 popd
 
 # link python package to site-packages
-ln -sf /usr/local/frc/lib/python3.9/site-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/cv2"
+ln -sf /usr/local/frc/lib/python3.9/site-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cv2"
 
 #
 # Build wpiutil, cscore, ntcore, cameraserver
@@ -340,44 +364,156 @@ sed -i -e 's, -L/pi-gen[^ ]*,,g' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconf
 
 popd
 
+on_chroot << EOF
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.1.1.0-cp39-cp39-linux_aarch64.whl
+EOF
+
+
+### We install wheels instead of using this, but keeping it because it *almost* works
 #
-# Install pynetworktables
+## these builds arepretty cpu-intensive, so we don't want to build it in a chroot,
+## and setup.py doesn't support cross-builds, so build it manually
+#pip3 install robotpy-build==2023.0.0
 #
-
-#sh -c "cd ${EXTRACT_DIR}/pynetworktables && tar cf - networktables ntcore" | sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/ && tar xf -"
-#on_chroot << EOF
-#pip3 install setuptools
-#pushd /usr/src/pynetworktables
-#python3 setup.py build
-#python3 setup.py install
-#python3 setup.py clean
-#popd
-#EOF
-
+##
+## Build robotpy-wpiutil
+##
+#pushd ${EXTRACT_DIR}/robotpy-wpiutil
 #
-# Build robotpy-cscore
-# this build is pretty cpu-intensive, so we don't want to build it in a chroot,
-# and setup.py doesn't support cross-builds, so build it manually
+## install Python sources
+#sh -c 'tar cf - wpiutil' | \
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
 #
-#pushd ${EXTRACT_DIR}/robotpy-cscore
-
-# install Python sources
-#sh -c 'tar cf - cscore' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages && tar xf -"
-
-# install blank _init_cscore.py
-touch "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/cscore/_init_cscore.py"
-
-# build module
-#aarch64-bullseye-linux-gnu-g++ \
+## install blank _init_wpiutil.py
+#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/wpiutil/_init_wpiutil.py"
+#
+## generate sources
+#python3 setup.py build_gen
+#
+## build module
+#aarch64-linux-gnu-g++ \
 #    --sysroot=${ROOTFS_DIR} \
-#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++17 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
-#    -Ipybind11/include \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cscore wpiutil` \
-#    src/_cscore.cpp \
-#    src/ndarray_converter.cpp \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs cscore wpiutil` \
+#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_wpiutil.cpython-39-aarch64-linux-gnu.so" \
+#    -I build/temp.*/gensrc/* \
+#    -I../robotpy-build/robotpy_build/include \
+#    -I../robotpy-build/robotpy_build/pybind11/include \
+#    -Iwpiutil/src/type_casters \
+#    -Iwpiutil/rpy-include \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 wpiutil` \
+#    wpiutil/src/main.cpp \
+#    wpiutil/src/safethread_gil.cpp \
+#    wpiutil/src/stacktracehook.cpp \
+#    build/temp.*/gensrc/*/*.cpp \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs wpiutil` \
+#    || exit 1
+#
+#popd
+#
+#pip3 install robotpy-wpiutil==2023.1.1.0
+#
+##
+## Build robotpy-wpinet
+##
+#pushd ${EXTRACT_DIR}/robotpy-wpinet
+#
+## install Python sources
+#sh -c 'tar cf - wpinet' | \
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
+#
+## install blank _init_wpinet.py
+#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/wpinet/_init_wpinet.py"
+#
+## generate sources
+#python3 setup.py build_gen
+#
+## build module
+#aarch64-linux-gnu-g++ \
+#    --sysroot=${ROOTFS_DIR} \
+#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_wpinet.cpython-39-aarch64-linux-gnu.so" \
+#    -I build/temp.*/gensrc/* \
+#    -I../robotpy-build/robotpy_build/include \
+#    -I../robotpy-build/robotpy_build/pybind11/include \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 wpinet wpiutil` \
+#    wpinet/src/main.cpp \
+#    build/temp.*/gensrc/*/*.cpp \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs wpinet wpiutil` \
+#    || exit 1
+#
+#popd
+#
+#pip3 install robotpy-wpinet==2023.1.1.0
+#
+##
+## Build pyntcore
+##
+#pushd ${EXTRACT_DIR}/pyntcore
+#
+## install Python sources
+#sh -c 'tar cf - ntcore' | \
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
+#
+## install blank _init_ntcore.py
+#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cscore/_init_ntcore.py"
+#
+## generate sources
+#python3 setup.py build_gen
+#
+## build module
+#aarch64-linux-gnu-g++ \
+#    --sysroot=${ROOTFS_DIR} \
+#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
+#    -I build/temp.*/gensrc/* \
+#    -I../robotpy-build/robotpy_build/include \
+#    -I../robotpy-build/robotpy_build/pybind11/include \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 ntcore wpiutil` \
+#    ntcore/src/ntcore.cpp \
+#    ntcore/src/nt_instance.cpp \
+#    ntcore/src/py2value.cpp \
+#    ntcore/src/pyentry.cpp \
+#    build/temp.*/gensrc/*/*.cpp \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs ntcore wpiutil` \
+#    || exit 1
+#
+#popd
+#
+#pip3 install pyntcore==2023.1.1.0
+#
+##
+## Build robotpy-cscore
+##
+#pushd ${EXTRACT_DIR}/robotpy-cscore
+#
+## install Python sources
+#sh -c 'tar cf - cscore' | \
+#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
+#
+## install blank _init_cscore.py
+#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cscore/_init_cscore.py"
+#
+## generate sources
+#python3 setup.py build_gen
+#
+## build module
+#aarch64-linux-gnu-g++ \
+#    --sysroot=${ROOTFS_DIR} \
+#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
+#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
+#    -I build/temp.*/gensrc/* \
+#    -I../robotpy-build/robotpy_build/include \
+#    -I../robotpy-build/robotpy_build/pybind11/include \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cameraserver cscore wpiutil` \
+#    cscore/src/main.cpp \
+#    cscore/cvnp/cvnp.cpp \
+#    cscore/cvnp/cvnp_synonyms.cpp \
+#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs cameraserver cscore wpiutil` \
 #    || exit 1
 #
 #popd
