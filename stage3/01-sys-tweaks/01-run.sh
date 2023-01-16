@@ -367,7 +367,7 @@ popd
 on_chroot << EOF
 pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.2.1.0-cp39-cp39-linux_aarch64.whl
 pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.2.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.2.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.2.1.1-cp39-cp39-linux_aarch64.whl
 pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.2.1.0-cp39-cp39-linux_aarch64.whl
 pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.2.1.0-cp39-cp39-linux_aarch64.whl
 pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.2.1.0-cp39-cp39-linux_aarch64.whl
