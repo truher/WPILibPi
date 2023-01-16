@@ -182,35 +182,32 @@ def startCamera(config):
 
 def startSwitchedCamera(config):
     """Start running the switched camera."""
-    print("Switched cameras not yet implemented in Python")
-    #print("Starting switched camera '{}' on {}".format(config.name, config.key))
-    #server = CameraServer.addSwitchedCamera(config.name)
-    #
-    #def listener(event):
-    #    data = event.data
-    #    if data is not None:
-    #        print(dir(data))
-    #        print(dir(data.value))
-    #        if data.value.isInteger():
-    #            i = data.value.getInteger()
-    #            if i >= 0 and i < len(cameras):
-    #                server.setSource(cameras[i])
-    #        elif data.value.isDouble():
-    #            i = int(data.value.getDouble())
-    #            if i >= 0 and i < len(cameras):
-    #                server.setSource(cameras[i])
-    #        elif data.value.IsString():
-    #            for i in range(len(cameraConfigs)):
-    #                if value == cameraConfigs[i].name:
-    #                    server.setSource(cameras[i])
-    #                    break
-    #
-    #NetworkTableInstance.getDefault().addListener(
-    #    NetworkTableInstance.getDefault().getEntry(config.key),
-    #    EventFlags.kImmediate | EventFlags.kValueAll,
-    #    listener)
-    #
-    #return server
+    print("Starting switched camera '{}' on {}".format(config.name, config.key))
+    server = CameraServer.addSwitchedCamera(config.name)
+
+    def listener(event):
+        data = event.data
+        if data is not None:
+            value = data.value.value()
+            if isinstance(value, int):
+                if value >= 0 and value < len(cameras):
+                    server.setSource(cameras[value])
+            elif isinstance(value, float):
+                i = int(value)
+                if i >= 0 and i < len(cameras):
+                    server.setSource(cameras[i])
+            elif isinstance(value, str):
+                for i in range(len(cameraConfigs)):
+                    if value == cameraConfigs[i].name:
+                        server.setSource(cameras[i])
+                        break
+
+    NetworkTableInstance.getDefault().addListener(
+        NetworkTableInstance.getDefault().getEntry(config.key),
+        EventFlags.kImmediate | EventFlags.kValueAll,
+        listener)
+
+    return server
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
