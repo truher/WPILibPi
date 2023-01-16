@@ -231,9 +231,8 @@ public final class Main {
    */
   public static VideoSource startCamera(CameraConfig config) {
     System.out.println("Starting camera '" + config.name + "' on " + config.path);
-    CameraServer inst = CameraServer.getInstance();
     UsbCamera camera = new UsbCamera(config.name, config.path);
-    MjpegServer server = inst.startAutomaticCapture(camera);
+    MjpegServer server = CameraServer.startAutomaticCapture(camera);
 
     Gson gson = new GsonBuilder().create();
 
@@ -252,7 +251,7 @@ public final class Main {
    */
   public static MjpegServer startSwitchedCamera(SwitchedCameraConfig config) {
     System.out.println("Starting switched camera '" + config.name + "' on " + config.key);
-    MjpegServer server = CameraServer.getInstance().addSwitchedCamera(config.name);
+    MjpegServer server = CameraServer.addSwitchedCamera(config.name);
 
     NetworkTableInstance inst = NetworkTableInstance.getDefault();
     inst.addListener(
@@ -317,7 +316,7 @@ public final class Main {
       ntinst.startServer();
     } else {
       System.out.println("Setting up NetworkTables client for team " + team);
-      ntinst.startClient4();
+      ntinst.startClient4("wpilibpi");
       ntinst.setServerTeam(team);
       ntinst.startDSClient();
     }
