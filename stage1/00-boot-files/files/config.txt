@@ -58,7 +58,18 @@ gpu_mem=128
 disable_camera_led=1
 
 # Automatically load overlays for detected cameras
+# This generally doesn't seem to work for V4L2 (what cscore uses);
+# Instead change this to 0 and uncomment the line for the sensor you want
+# to use.
+# Pi Camera Board v1.3: ov5647
+# Pi Camera Board v2: imx219
 camera_auto_detect=1
+#dtoverlay=imx219,media-controller=0
+#dtoverlay=imx290,clock-frequency=74250000,media-controller=0
+#dtoverlay=imx290,clock-frequency=37125000,media-controller=0
+#dtoverlay=imx378,media-controller=0
+#dtoverlay=ov5647,media-controller=0
+#dtoverlay=ov9281,media-controller=0
 
 # Automatically load overlays for detected DSI displays
 display_auto_detect=1
