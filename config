@@ -1,10 +1,10 @@
-IMG_NAME='WPILibPi'
+IMG_NAME='WPILibPi_64'
 TARGET_HOSTNAME=wpilibpi
 FIRST_USER_PASS=raspberry
 DISABLE_FIRST_BOOT_USER_RENAME=1
 ENABLE_SSH=1
-PI_GEN=WPILib-pi-gen
-PI_GEN_REPO=https://github.com/allwpilib/FRCVision-pi-gen
+PI_GEN=WPILibPi
+PI_GEN_REPO=https://github.com/wpilibsuite/WPILibPi
 LOCALE_DEFAULT=en_US.UTF-8
 KEYBOARD_KEYMAP=us
 KEYBOARD_LAYOUT="English (US) - English (US\\, international with dead keys)"
