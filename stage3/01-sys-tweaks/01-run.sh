@@ -96,7 +96,6 @@ sed -i -e 's/javac sourcepath/javac target="1.8" source="1.8" sourcepath/' modul
 # disable extraneous data warnings; these are common with USB cameras
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg/jdmarker.c
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg-turbo/src/jdmarker.c
-#patch -p0 < "${SUB_STAGE_DIR}/files/opencv.patch"
 popd
 
 # allwpilib
@@ -107,33 +106,33 @@ pushd allwpilib
 popd
 
 # robotpy-build
-tar xzf "${DOWNLOAD_DIR}/robotpy-build.tar.gz"
-mv robotpy-build-* robotpy-build
+#tar xzf "${DOWNLOAD_DIR}/robotpy-build.tar.gz"
+#mv robotpy-build-* robotpy-build
 
 # pybind11
-tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
-rmdir robotpy-build/robotpy_build/pybind11
-mv pybind11-* robotpy-build/robotpy_build/pybind11
+#tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
+#rmdir robotpy-build/robotpy_build/pybind11
+#mv pybind11-* robotpy-build/robotpy_build/pybind11
 
 # robotpy-wpiutil
-tar xzf "${DOWNLOAD_DIR}/robotpy-wpiutil.tar.gz"
-mv robotpy-wpiutil-* robotpy-wpiutil
-echo "__version__ = '2023.1.1.0'" > robotpy-wpiutil/wpiutil/version.py
+#tar xzf "${DOWNLOAD_DIR}/robotpy-wpiutil.tar.gz"
+#mv robotpy-wpiutil-* robotpy-wpiutil
+#echo "__version__ = '2023.1.1.0'" > robotpy-wpiutil/wpiutil/version.py
 
 # robotpy-wpinet
-tar xzf "${DOWNLOAD_DIR}/robotpy-wpinet.tar.gz"
-mv robotpy-wpinet-* robotpy-wpinet
-echo "__version__ = '2023.1.1.0'" > robotpy-wpinet/wpinet/version.py
+#tar xzf "${DOWNLOAD_DIR}/robotpy-wpinet.tar.gz"
+#mv robotpy-wpinet-* robotpy-wpinet
+#echo "__version__ = '2023.1.1.0'" > robotpy-wpinet/wpinet/version.py
 
 # pyntcore
-tar xzf "${DOWNLOAD_DIR}/pyntcore.tar.gz"
-mv pyntcore-* pyntcore
-echo "__version__ = '2023.1.1.0'" > pyntcore/ntcore/version.py
+#tar xzf "${DOWNLOAD_DIR}/pyntcore.tar.gz"
+#mv pyntcore-* pyntcore
+#echo "__version__ = '2023.1.1.0'" > pyntcore/ntcore/version.py
 
 # robotpy-cscore
-tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
-mv robotpy-cscore-* robotpy-cscore
-echo "__version__ = '2023.1.1.0'" > robotpy-cscore/cscore/version.py
+#tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
+#mv robotpy-cscore-* robotpy-cscore
+#echo "__version__ = '2023.1.1.0'" > robotpy-cscore/cscore/version.py
 
 # pixy2
 tar xzf "${DOWNLOAD_DIR}/pixy2.tar.gz"
@@ -365,12 +364,12 @@ sed -i -e 's, -L/pi-gen[^ ]*,,g' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconf
 popd
 
 on_chroot << EOF
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.2.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.2.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.2.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.2.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.2.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.2.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.2.1.1-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.2.1.1-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.2.1.3-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.2.1.1-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.2.1.1-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.2.1.1-cp39-cp39-linux_aarch64.whl
 EOF
 
 

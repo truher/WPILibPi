@@ -7,6 +7,9 @@ python3-distutils
 python3-jinja2
 python3-numpy
 python3-pip
+python3-pycoral
+libedgetpu1-std
+libedgetpu-dev
 libtbb-dev
 libtbb2
 libusb-1.0-0-dev
