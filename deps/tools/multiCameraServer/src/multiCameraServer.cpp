@@ -287,6 +287,8 @@ int main(int argc, char* argv[]) {
   }
 
   // start cameras
+  // work around wpilibsuite/allwpilib#5055
+  frc::CameraServer::SetSize(frc::CameraServer::kSize160x120);
   for (const auto& config : cameraConfigs)
     cameras.emplace_back(StartCamera(config));
 

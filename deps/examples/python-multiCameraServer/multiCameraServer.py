@@ -229,6 +229,8 @@ if __name__ == "__main__":
         ntinst.startDSClient()
 
     # start cameras
+    # work around wpilibsuite/allwpilib#5055
+    CameraServer.setSize(CameraServer.kSize160x120)
     for config in cameraConfigs:
         cameras.append(startCamera(config))
 
