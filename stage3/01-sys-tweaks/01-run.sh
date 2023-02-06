@@ -48,7 +48,7 @@ wget -nc -nv -O contrib-4.6.0.tar.gz \
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2023.2.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/archive/v2023.3.2.tar.gz
 
 ## robotpy-build
 #wget -nc -nv -O robotpy-build.tar.gz \
@@ -364,12 +364,12 @@ sed -i -e 's, -L/pi-gen[^ ]*,,g' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconf
 popd
 
 on_chroot << EOF
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.2.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.2.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.2.1.3-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.2.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.2.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.2.1.1-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.3.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.3.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.3.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.3.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.3.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.3.1.0-cp39-cp39-linux_aarch64.whl
 EOF
 
 
