@@ -199,10 +199,10 @@ void RomiStatus::FirmwareUpdate(std::function<void(std::string_view)> onFail) {
   // create pipe to capture stdout
   auto pipe = uv::Pipe::Create(m_loop);
   if (auto proc = uv::Process::Spawn(
-          m_loop, "/usr/bin/python",
+          m_loop, "/usr/bin/python3",
           pipe ? uv::Process::StdioCreatePipe(1, *pipe, UV_WRITABLE_PIPE)
                : uv::Process::Option(),
-          "/usr/bin/python", "/usr/src/wpilib-ws-romi/scripts/uploadRomi.py")) {
+          "/usr/bin/python3", "/usr/src/wpilib-ws-romi/scripts/uploadRomi.py")) {
     // send stdout output to firmware log
     if (pipe) {
       pipe->StartRead();
