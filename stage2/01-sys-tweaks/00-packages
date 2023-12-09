@@ -3,18 +3,22 @@ ntp
 daemontools daemontools-run
 build-essential gdb
 busybox-syslogd
-ssh less fbset sudo psmisc strace ed ncdu crda
+ssh less fbset sudo psmisc strace ed ncdu
 console-setup keyboard-configuration debconf-utils parted
 build-essential manpages-dev bash-completion gdb pkg-config
 python-is-python3
+v4l-utils
 gdbserver
 python3-numpy libopenblas-base
-python3-rpi.gpio v4l-utils
+gpiod python3-libgpiod
 python3-gpiozero
+pigpio python3-pigpio raspi-gpio python3-rpi.gpio
+python3-spidev
+python3-smbus2
 avahi-daemon
 lua5.1
 luajit
-hardlink ca-certificates curl
+ca-certificates curl
 fake-hwclock usbutils
 dosfstools
 dphys-swapfile
@@ -27,15 +31,15 @@ libmtp-runtime
 htop
 policykit-1
 ssh-import-id
-rng-tools
 ethtool
 ntfs-3g
 pciutils
 rpi-eeprom
-raspinfo
 python3-picamera
+raspi-utils
 udisks2
 unzip zip p7zip-full
 file
 kms++-utils
 openjdk-17-jdk
+python3-venv
