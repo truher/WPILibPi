@@ -42,13 +42,14 @@ pushd ${DOWNLOAD_DIR}
 
 # opencv sources
 wget -nc -nv \
-    https://github.com/opencv/opencv/archive/4.6.0.tar.gz
-wget -nc -nv -O contrib-4.6.0.tar.gz \
-    https://github.com/opencv/opencv_contrib/archive/4.6.0.tar.gz
+    https://github.com/opencv/opencv/archive/4.8.0.tar.gz
+wget -nc -nv -O contrib-4.8.0.tar.gz \
+    https://github.com/opencv/opencv_contrib/archive/4.8.0.tar.gz
 
 # allwpilib
 wget -nc -nv -O allwpilib.tar.gz \
-    https://github.com/wpilibsuite/allwpilib/archive/v2023.4.1.tar.gz
+    https://github.com/wpilibsuite/allwpilib/tarball/d9b504bc84019da6b2da3293d13264f2b01d2c4c
+    #https://github.com/wpilibsuite/allwpilib/archive/v2023.4.1.tar.gz
 
 ## robotpy-build
 #wget -nc -nv -O robotpy-build.tar.gz \
@@ -88,10 +89,10 @@ install -v -d ${EXTRACT_DIR}
 pushd ${EXTRACT_DIR}
 
 # opencv
-rm -rf opencv-4.6.0
-tar xzf "${DOWNLOAD_DIR}/4.6.0.tar.gz"
-tar xzf "${DOWNLOAD_DIR}/contrib-4.6.0.tar.gz"
-pushd opencv-4.6.0
+rm -rf opencv-4.8.0
+tar xzf "${DOWNLOAD_DIR}/4.8.0.tar.gz"
+tar xzf "${DOWNLOAD_DIR}/contrib-4.8.0.tar.gz"
+pushd opencv-4.8.0
 sed -i -e 's/javac sourcepath/javac target="1.8" source="1.8" sourcepath/' modules/java/jar/build.xml.in
 # disable extraneous data warnings; these are common with USB cameras
 sed -i -e '/JWRN_EXTRANEOUS_DATA/d' 3rdparty/libjpeg/jdmarker.c
@@ -101,38 +102,10 @@ popd
 # allwpilib
 tar xzf "${DOWNLOAD_DIR}/allwpilib.tar.gz"
 rm -rf allwpilib
-mv allwpilib-* allwpilib
+#mv allwpilib-* allwpilib
+mv wpilibsuite-allwpilib-* allwpilib
 pushd allwpilib
 popd
-
-# robotpy-build
-#tar xzf "${DOWNLOAD_DIR}/robotpy-build.tar.gz"
-#mv robotpy-build-* robotpy-build
-
-# pybind11
-#tar xzf "${DOWNLOAD_DIR}/pybind11.tar.gz"
-#rmdir robotpy-build/robotpy_build/pybind11
-#mv pybind11-* robotpy-build/robotpy_build/pybind11
-
-# robotpy-wpiutil
-#tar xzf "${DOWNLOAD_DIR}/robotpy-wpiutil.tar.gz"
-#mv robotpy-wpiutil-* robotpy-wpiutil
-#echo "__version__ = '2023.1.1.0'" > robotpy-wpiutil/wpiutil/version.py
-
-# robotpy-wpinet
-#tar xzf "${DOWNLOAD_DIR}/robotpy-wpinet.tar.gz"
-#mv robotpy-wpinet-* robotpy-wpinet
-#echo "__version__ = '2023.1.1.0'" > robotpy-wpinet/wpinet/version.py
-
-# pyntcore
-#tar xzf "${DOWNLOAD_DIR}/pyntcore.tar.gz"
-#mv pyntcore-* pyntcore
-#echo "__version__ = '2023.1.1.0'" > pyntcore/ntcore/version.py
-
-# robotpy-cscore
-#tar xzf "${DOWNLOAD_DIR}/robotpy-cscore.tar.gz"
-#mv robotpy-cscore-* robotpy-cscore
-#echo "__version__ = '2023.1.1.0'" > robotpy-cscore/cscore/version.py
 
 # pixy2
 tar xzf "${DOWNLOAD_DIR}/pixy2.tar.gz"
@@ -164,34 +137,34 @@ build_opencv () {
     rm -rf $1
     mkdir -p $1
     pushd $1
-    cmake "${EXTRACT_DIR}/opencv-4.6.0" \
+    cmake "${EXTRACT_DIR}/opencv-4.8.0" \
+	-G Ninja \
 	-DWITH_FFMPEG=OFF \
         -DBUILD_JPEG=ON \
         -DBUILD_TIFF=ON \
         -DBUILD_TESTS=OFF \
-        -DPython_ADDITIONAL_VERSIONS=3.9 \
+        -DPython_ADDITIONAL_VERSIONS=3.11 \
         -DBUILD_JAVA=$3 \
         -DENABLE_CXX11=ON \
         -DBUILD_SHARED_LIBS=$3 \
         -DCMAKE_BUILD_TYPE=$2 \
         -DCMAKE_DEBUG_POSTFIX=d \
-        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.8.0/platforms/linux/aarch64-gnu.toolchain.cmake \
         -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_SYSROOT=${ROOTFS_DIR} \
-        -DCMAKE_MAKE_PROGRAM=make \
         -DENABLE_NEON=ON \
         -DWITH_TBB=$3 \
         -DBUILD_opencv_python3=$3 \
-        -DPYTHON3_INCLUDE_PATH=${ROOTFS_DIR}/usr/include/python3.9 \
-        -DPYTHON3_NUMPY_INCLUDE_DIRS=${ROOTFS_DIR}/usr/include/python3.9/numpy \
+        -DPYTHON3_INCLUDE_PATH=${ROOTFS_DIR}/usr/include/python3.11 \
+        -DPYTHON3_NUMPY_INCLUDE_DIRS=${ROOTFS_DIR}/usr/include/python3.11/numpy \
         -DOPENCV_EXTRA_FLAGS_DEBUG=-Og \
 	-DOPENCV_GENERATE_PKGCONFIG=ON \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc$4 \
-	-DOPENCV_EXTRA_MODULES_PATH=${EXTRACT_DIR}/opencv_contrib-4.6.0/modules/aruco \
+	-DOPENCV_EXTRA_MODULES_PATH=${EXTRACT_DIR}/opencv_contrib-4.8.0/modules/aruco \
         || exit 1
-    make -j${NCPU} || exit 1
-    make DESTDIR=${ROOTFS_DIR} install || exit 1
+    ninja || exit 1
+    env DESTDIR=${ROOTFS_DIR} ninja install || exit 1
     popd
 }
 
@@ -200,19 +173,19 @@ build_opencv build/opencv-build Release ON "" || exit 1
 build_opencv build/opencv-static Release OFF "-static" || exit 1
 
 # fix up java install
-cp -p ${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/libopencv_java460*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
+cp -p ${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/libopencv_java480*.so "${ROOTFS_DIR}/usr/local/frc/lib/"
 mkdir -p "${ROOTFS_DIR}/usr/local/frc/java"
-cp -p "${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/opencv-460.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
+cp -p "${ROOTFS_DIR}/usr/local/frc/share/java/opencv4/opencv-480.jar" "${ROOTFS_DIR}/usr/local/frc/java/"
 
 # the opencv build names the python .so with the build platform name
 # instead of the target platform, so rename it
-pushd "${ROOTFS_DIR}/usr/local/frc/lib/python3.9/site-packages/cv2/python-3.9"
-mv cv2.cpython-39-*-gnu.so cv2.cpython-39-aarch64-linux-gnu.so
-mv cv2d.cpython-39-*-gnu.so cv2d.cpython-39-aarch64-linux-gnu.so
+pushd "${ROOTFS_DIR}/usr/local/frc/lib/python3.11/dist-packages/cv2/python-3.11"
+mv cv2.cpython-311-*-gnu.so cv2.cpython-311-aarch64-linux-gnu.so
+mv cv2d.cpython-311-*-gnu.so cv2d.cpython-311-aarch64-linux-gnu.so
 popd
 
-# link python package to site-packages
-ln -sf /usr/local/frc/lib/python3.9/site-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cv2"
+# link python package to dist-packages
+ln -sf /usr/local/frc/lib/python3.11/dist-packages/cv2 "${ROOTFS_DIR}/usr/local/lib/python3.11/dist-packages/cv2"
 
 #
 # Build wpiutil, cscore, ntcore, cameraserver
@@ -223,22 +196,24 @@ build_wpilib () {
     mkdir -p $1
     pushd $1
     cmake "${EXTRACT_DIR}/allwpilib" \
+	-G Ninja \
         -DWITH_GUI=OFF \
         -DWITH_TESTS=OFF \
         -DWITH_SIMULATION_MODULES=OFF \
-	-DWPILIB_TARGET_WARNINGS=-Wno-deprecated-declarations \
+	-DWPILIB_TARGET_WARNINGS=-Wno-maybe-uninitialized \
         -DCMAKE_BUILD_TYPE=$2 \
-        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.8.0/platforms/linux/aarch64-gnu.toolchain.cmake \
         -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
-        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-460.jar` \
-        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java460.so` \
+        -DOPENCV_JAR_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/java/opencv-480.jar` \
+        -DOPENCV_JNI_FILE=`ls ${ROOTFS_DIR}/usr/local/frc/lib/libopencv_java480.so` \
         -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/opencv4 \
         -DTHREADS_PTHREAD_ARG=-pthread \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc \
         || exit 1
-    make -j${NCPU} || exit 1
+    ninja || exit 1
+    env DESTDIR=${ROOTFS_DIR} ninja install || exit 1
     popd
 }
 
@@ -251,12 +226,13 @@ build_static_wpilib() {
     mkdir -p $1
     pushd $1
     cmake "${EXTRACT_DIR}/allwpilib" \
+	-G Ninja \
         -DWITH_GUI=OFF \
         -DWITH_TESTS=OFF \
         -DWITH_SIMULATION_MODULES=OFF \
-	-DWPILIB_TARGET_WARNINGS=-Wno-deprecated-declarations \
+	-DWPILIB_TARGET_WARNINGS=-Wno-maybe-uninitialized \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.6.0/platforms/linux/aarch64-gnu.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=${ROOTFS_DIR}/usr/src/opencv-4.8.0/platforms/linux/aarch64-gnu.toolchain.cmake \
         -DARM_LINUX_SYSROOT=${ROOTFS_DIR} \
         -DCMAKE_MODULE_PATH=${SUB_STAGE_DIR}/files \
         -DOpenCV_DIR=${ROOTFS_DIR}/usr/local/frc/share/OpenCV \
@@ -265,79 +241,11 @@ build_static_wpilib() {
         -DTHREADS_PTHREAD_ARG=-pthread \
         -DCMAKE_INSTALL_PREFIX=/usr/local/frc-static \
         || exit 1
-    make -j${NCPU} || exit 1
+    ninja || exit 1
+    env DESTDIR=${ROOTFS_DIR} ninja install || exit 1
     popd
 }
 build_static_wpilib build/allwpilib-static || exit 1
-
-# manually install, since cmake install is a bit weirdly set up
-install -v -d "${ROOTFS_DIR}/usr/local/frc/bin"
-install -v -d "${ROOTFS_DIR}/usr/local/frc/include"
-install -v -d "${ROOTFS_DIR}/usr/local/frc/java"
-install -v -d "${ROOTFS_DIR}/usr/local/frc/lib"
-install -v -d "${ROOTFS_DIR}/usr/local/frc-static/lib"
-
-# built libs
-sh -c 'cd build/allwpilib-build/lib && tar cf - lib*' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/lib && tar xf -"
-sh -c 'cd build/allwpilib-build-debug/lib && tar cf - lib*' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/lib && tar xf -"
-sh -c 'cd build/allwpilib-static/lib && tar cf - lib*' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc-static/lib && tar xf -"
-
-# built headers
-sh -c 'cd build/allwpilib-build/hal/gen && tar cf - .' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c 'cd build/allwpilib-build/ntcore/generated/main/native/include && tar cf - .' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-
-# built jars
-sh -c 'cd build/allwpilib-build/jar && tar cf - *.jar' | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/java && tar xf -"
-
-# headers
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/fmtlib/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/ghc/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/json/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/llvm/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/memory/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/mpack/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpiutil/src/main/native/thirdparty/sigslot/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/thirdparty/libuv/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/thirdparty/tcpsockets/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpinet/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/cscore/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/ntcore/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/cameraserver/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/hal/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/drake/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/eigen/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpimath/src/main/native/thirdparty/gcem/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/apriltag/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
-sh -c "cd ${EXTRACT_DIR}/allwpilib/wpilibc/src/main/native/include && tar cf - ." | \
-    sh -c "cd ${ROOTFS_DIR}/usr/local/frc/include && tar xf -"
 
 # executables (use static build to ensure they don't break)
 sh -c 'cd build/allwpilib-static/bin && tar cf - cscore_* netconsoleTee*' | \
@@ -345,7 +253,7 @@ sh -c 'cd build/allwpilib-static/bin && tar cf - cscore_* netconsoleTee*' | \
 
 # pkgconfig files
 install -v -d "${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig"
-install -m 644 ${SUB_STAGE_DIR}/files/pkgconfig/* "${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig"
+install -m 644 ${SUB_STAGE_DIR}/files/pkgconfig/*.pc "${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig"
 install -v -d "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig"
 for f in ${SUB_STAGE_DIR}/files/pkgconfig/*.pc; do
   install -m 644 $f "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig"
@@ -359,163 +267,22 @@ ln -sf ../frc/include "${ROOTFS_DIR}/usr/local/frc-static/include"
 rm -rf "${ROOTFS_DIR}/usr/local/frc-static/python"
 
 # fix up frc-static opencv pkgconfig Libs.private
-sed -i -e 's, -L/pi-gen[^ ]*,,g' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig/opencv.pc"
+sed -i -e 's, -L/pi-gen[^ ]*,,g' "${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig/opencv4.pc"
 
 popd
 
+ROBOTPY_REPO=https://frcmaven.wpi.edu/api/download/wpilib-python-release-2024
+ROBOTPY_VERSION=2024.0.0b3
+ROBOTPY_ARCH=aarch64
+
 on_chroot << EOF
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpiutil-2023.4.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpinet-2023.4.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/pyntcore-2023.4.1.1-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_cscore-2023.4.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_wpimath-2023.4.1.0-cp39-cp39-linux_aarch64.whl
-pip3 install https://www.tortall.net/~robotpy/wheels/2023/raspbian/robotpy_apriltag-2023.4.1.0-cp39-cp39-linux_aarch64.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/robotpy-wpiutil/${ROBOTPY_VERSION}/robotpy_wpiutil-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/robotpy-wpinet/${ROBOTPY_VERSION}/robotpy_wpinet-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/pyntcore/${ROBOTPY_VERSION}/pyntcore-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/robotpy-cscore/${ROBOTPY_VERSION}/robotpy_cscore-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/robotpy-wpimath/${ROBOTPY_VERSION}/robotpy_wpimath-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
+pip3 install --break-system-packages ${ROBOTPY_REPO}/robotpy-apriltag/${ROBOTPY_VERSION}/robotpy_apriltag-${ROBOTPY_VERSION}-cp311-cp311-linux_${ROBOTPY_ARCH}.whl
 EOF
-
-
-### We install wheels instead of using this, but keeping it because it *almost* works
-#
-## these builds arepretty cpu-intensive, so we don't want to build it in a chroot,
-## and setup.py doesn't support cross-builds, so build it manually
-#pip3 install robotpy-build==2023.0.0
-#
-##
-## Build robotpy-wpiutil
-##
-#pushd ${EXTRACT_DIR}/robotpy-wpiutil
-#
-## install Python sources
-#sh -c 'tar cf - wpiutil' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
-#
-## install blank _init_wpiutil.py
-#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/wpiutil/_init_wpiutil.py"
-#
-## generate sources
-#python3 setup.py build_gen
-#
-## build module
-#aarch64-linux-gnu-g++ \
-#    --sysroot=${ROOTFS_DIR} \
-#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_wpiutil.cpython-39-aarch64-linux-gnu.so" \
-#    -I build/temp.*/gensrc/* \
-#    -I../robotpy-build/robotpy_build/include \
-#    -I../robotpy-build/robotpy_build/pybind11/include \
-#    -Iwpiutil/src/type_casters \
-#    -Iwpiutil/rpy-include \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 wpiutil` \
-#    wpiutil/src/main.cpp \
-#    wpiutil/src/safethread_gil.cpp \
-#    wpiutil/src/stacktracehook.cpp \
-#    build/temp.*/gensrc/*/*.cpp \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs wpiutil` \
-#    || exit 1
-#
-#popd
-#
-#pip3 install robotpy-wpiutil==2023.1.1.0
-#
-##
-## Build robotpy-wpinet
-##
-#pushd ${EXTRACT_DIR}/robotpy-wpinet
-#
-## install Python sources
-#sh -c 'tar cf - wpinet' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
-#
-## install blank _init_wpinet.py
-#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/wpinet/_init_wpinet.py"
-#
-## generate sources
-#python3 setup.py build_gen
-#
-## build module
-#aarch64-linux-gnu-g++ \
-#    --sysroot=${ROOTFS_DIR} \
-#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_wpinet.cpython-39-aarch64-linux-gnu.so" \
-#    -I build/temp.*/gensrc/* \
-#    -I../robotpy-build/robotpy_build/include \
-#    -I../robotpy-build/robotpy_build/pybind11/include \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 wpinet wpiutil` \
-#    wpinet/src/main.cpp \
-#    build/temp.*/gensrc/*/*.cpp \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs wpinet wpiutil` \
-#    || exit 1
-#
-#popd
-#
-#pip3 install robotpy-wpinet==2023.1.1.0
-#
-##
-## Build pyntcore
-##
-#pushd ${EXTRACT_DIR}/pyntcore
-#
-## install Python sources
-#sh -c 'tar cf - ntcore' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
-#
-## install blank _init_ntcore.py
-#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cscore/_init_ntcore.py"
-#
-## generate sources
-#python3 setup.py build_gen
-#
-## build module
-#aarch64-linux-gnu-g++ \
-#    --sysroot=${ROOTFS_DIR} \
-#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
-#    -I build/temp.*/gensrc/* \
-#    -I../robotpy-build/robotpy_build/include \
-#    -I../robotpy-build/robotpy_build/pybind11/include \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 ntcore wpiutil` \
-#    ntcore/src/ntcore.cpp \
-#    ntcore/src/nt_instance.cpp \
-#    ntcore/src/py2value.cpp \
-#    ntcore/src/pyentry.cpp \
-#    build/temp.*/gensrc/*/*.cpp \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs ntcore wpiutil` \
-#    || exit 1
-#
-#popd
-#
-#pip3 install pyntcore==2023.1.1.0
-#
-##
-## Build robotpy-cscore
-##
-#pushd ${EXTRACT_DIR}/robotpy-cscore
-#
-## install Python sources
-#sh -c 'tar cf - cscore' | \
-#    sh -c "cd ${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages && tar xf -"
-#
-## install blank _init_cscore.py
-#touch "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/cscore/_init_cscore.py"
-#
-## generate sources
-#python3 setup.py build_gen
-#
-## build module
-#aarch64-linux-gnu-g++ \
-#    --sysroot=${ROOTFS_DIR} \
-#    -g -O -Wall -fvisibility=hidden -shared -fPIC -std=c++20 \
-#    -o "${ROOTFS_DIR}/usr/local/lib/python3.9/dist-packages/_cscore.cpython-39-aarch64-linux-gnu.so" \
-#    -I build/temp.*/gensrc/* \
-#    -I../robotpy-build/robotpy_build/include \
-#    -I../robotpy-build/robotpy_build/pybind11/include \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --cflags python3 cameraserver cscore wpiutil` \
-#    cscore/src/main.cpp \
-#    cscore/cvnp/cvnp.cpp \
-#    cscore/cvnp/cvnp_synonyms.cpp \
-#    `env PKG_CONFIG_LIBDIR=${PKG_CONFIG_LIBDIR}:${ROOTFS_DIR}/usr/local/frc/lib/pkgconfig pkg-config --libs cameraserver cscore wpiutil` \
-#    || exit 1
-#
-#popd
 
 #
 # Build pixy2
@@ -528,8 +295,8 @@ popd
 EOF
 
 install -m 644 "${EXTRACT_DIR}/pixy2/build/libpixyusb2/libpixy2.a" "${ROOTFS_DIR}/usr/local/frc/lib/"
-install -m 644 "${EXTRACT_DIR}/pixy2/build/python_demos/pixy.py" "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/"
-install -m 755 ${EXTRACT_DIR}/pixy2/build/python_demos/_pixy.*.so "${ROOTFS_DIR}/usr/local/lib/python3.9/site-packages/"
+install -m 644 "${EXTRACT_DIR}/pixy2/build/python_demos/pixy.py" "${ROOTFS_DIR}/usr/local/lib/python3.11/dist-packages/"
+install -m 755 ${EXTRACT_DIR}/pixy2/build/python_demos/_pixy.*.so "${ROOTFS_DIR}/usr/local/lib/python3.11/dist-packages/"
 rm -rf "${EXTRACT_DIR}/pixy2/build"
 
 #

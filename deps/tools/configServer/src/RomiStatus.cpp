@@ -14,6 +14,7 @@
 #include <string_view>
 
 #include <fmt/format.h>
+#include <wpi/MemoryBuffer.h>
 #include <wpi/SmallString.h>
 #include <wpi/fmt/raw_ostream.h>
 #include <wpi/fs.h>
@@ -237,9 +238,10 @@ wpi::json RomiStatus::ReadRomiConfigFile(
     std::function<void(std::string_view)> onFail) {
   // Read config file
   std::error_code ec;
-  wpi::raw_fd_istream is(ROMI_JSON, ec);
+  std::unique_ptr<wpi::MemoryBuffer> fileBuffer =
+      wpi::MemoryBuffer::GetFile(ROMI_JSON, ec);
 
-  if (ec) {
+  if (fileBuffer == nullptr || ec) {
     onFail("Could not read romi config file");
     fmt::print(stderr, "could not read {}\n", ROMI_JSON);
     return wpi::json();
@@ -247,7 +249,7 @@ wpi::json RomiStatus::ReadRomiConfigFile(
 
   wpi::json j;
   try {
-    j = wpi::json::parse(is);
+    j = wpi::json::parse(fileBuffer->GetCharBuffer());
   } catch(const wpi::json::parse_error& e) {
     onFail("Parse error in config file");
     fmt::print(stderr, "Parse error in {}: byte {}: {}\n", ROMI_JSON, e.byte,

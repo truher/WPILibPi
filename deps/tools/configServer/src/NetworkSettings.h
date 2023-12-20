@@ -10,11 +10,8 @@
 #include <string_view>
 
 #include <wpi/Signal.h>
+#include <wpi/json_fwd.h>
 #include <wpinet/uv/Loop.h>
-
-namespace wpi {
-class json;
-}  // namespace wpi
 
 class NetworkSettings {
   struct private_init {};

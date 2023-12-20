@@ -2,12 +2,12 @@
 
 prefix=/usr/local/frc
 exec_prefix=${prefix}
-includedir=${prefix}/include
+includedir=${prefix}/include/wpimath
 libdir=${exec_prefix}/lib
 
 Name: wpimath
 Description: WPILib Robotics Library Math
-Version: 2023.1.1
+Version: 2024.1.1
 Requires: wpiutil
 Libs: -L${libdir} -lwpimath
 Cflags: -I${includedir}

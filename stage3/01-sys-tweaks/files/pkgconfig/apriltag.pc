@@ -2,12 +2,12 @@
 
 prefix=/usr/local/frc
 exec_prefix=${prefix}
-includedir=${prefix}/include
+includedir=${prefix}/include/apriltag
 libdir=${exec_prefix}/lib
 
 Name: apriltag
 Description: WPILib Robotics Library AprilTags
-Version: 2023.1.1
+Version: 2024.1.1
 Requires: wpimath wpiutil
 Libs: -L${libdir} -lapriltag
 Libs.private: -lpthread

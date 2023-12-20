@@ -2,12 +2,12 @@
 
 prefix=/usr/local/frc
 exec_prefix=${prefix}
-includedir=${prefix}/include
+includedir=${prefix}/include/cscore
 libdir=${exec_prefix}/lib
 
 Name: cscore
 Description: WPILib Robotics Library CameraServer Core
-Version: 2023.1.1
+Version: 2024.1.1
 Requires: wpiutil opencv4
 Requires.private: wpinet
 Libs: -L${libdir} -lcscore

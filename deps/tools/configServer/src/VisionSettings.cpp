@@ -5,6 +5,7 @@
 #include "VisionSettings.h"
 
 #include <fmt/format.h>
+#include <wpi/MemoryBuffer.h>
 #include <wpi/fs.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
@@ -41,15 +42,17 @@ void VisionSettings::UpdateStatus() { status(GetStatusJson()); }
 
 wpi::json VisionSettings::GetStatusJson() {
   std::error_code ec;
-  wpi::raw_fd_istream is(FRC_JSON, ec);
-  if (ec) {
+  std::unique_ptr<wpi::MemoryBuffer> fileBuffer =
+      wpi::MemoryBuffer::GetFile(FRC_JSON, ec);
+
+  if (fileBuffer == nullptr || ec) {
     fmt::print(stderr, "could not read {}\n", FRC_JSON);
     return wpi::json();
   }
 
   try {
     wpi::json j = {{"type", "visionSettings"},
-                   {"settings", wpi::json::parse(is)}};
+                   {"settings", wpi::json::parse(fileBuffer->GetCharBuffer())}};
     return j;
   } catch (wpi::json::exception& e) {
     fmt::print(stderr, "could not parse {}\n", FRC_JSON);

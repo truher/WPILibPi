@@ -9,6 +9,7 @@
 
 #include <fmt/format.h>
 #include <wpi/MathExtras.h>
+#include <wpi/bit.h>
 #include <wpi/timestamp.h>
 #include <wpinet/raw_uv_ostream.h>
 #include <wpinet/uv/Loop.h>
@@ -129,7 +130,8 @@ int main(int argc, char* argv[]) {
 
           // Header is 2 byte len, 1 byte type, 4 byte timestamp, 2 byte
           // sequence num
-          uint32_t ts = wpi::FloatToBits((wpi::Now() - startTime) * 1.0e-6);
+          uint32_t ts =
+              wpi::bit_cast<uint32_t>((wpi::Now() - startTime) * 1.0e-6f);
           uint16_t pktlen = len + 1 + 4 + 2;
           const uint8_t contents[] =
               {static_cast<uint8_t>((pktlen >> 8) & 0xff),
