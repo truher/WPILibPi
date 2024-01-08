@@ -10,9 +10,9 @@ ln -s /tmp/dhcpcd.resolv.conf /etc/resolv.conf
 
 #sed -i -e 's/\/run\//\/var\/run\//' /etc/systemd/system/dhcpcd5.service
 
-cp /etc/dhcpcd.conf /boot/
-chown -f 0:0 /boot/dhcpcd.conf
-ln -sf /boot/dhcpcd.conf /etc/dhcpcd.conf
+#cp /etc/dhcpcd.conf /boot/
+#chown -f 0:0 /boot/dhcpcd.conf
+#ln -sf /boot/dhcpcd.conf /etc/dhcpcd.conf
 
 cp /etc/wpa_supplicant/wpa_supplicant.conf /boot/wpa_supplicant_wpilibpi.conf
 chown -f 0:0 /boot/wpa_supplicant_wpilibpi.conf

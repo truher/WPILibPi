@@ -36,8 +36,8 @@ source "/home/${FIRST_USER_NAME}/.nvm/nvm.sh"
 nvm install 14.15.0
 
 npm --unsafe-perm --user=1000 --group=1000 install -g @wpilib/wpilib-ws-robot-romi
-npm --unsafe-perm --user=1000 --group=1000 install -g i2c-bus
 EOF
+#npm --unsafe-perm --user=1000 --group=1000 install -g i2c-bus
 
 # Fix NVM/NPM owner/group
 chown -R 1000:1000 "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.nvm"

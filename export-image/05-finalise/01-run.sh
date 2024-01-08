@@ -7,7 +7,10 @@ EXAMPLE_DIR="${STAGE_WORK_DIR}/examples"
 mkdir -p "${EXAMPLE_DIR}"
 cp -p "${ROOTFS_DIR}"/home/${FIRST_USER_NAME}/zips/* "${EXAMPLE_DIR}/"
 
+sed -i 's/^update_initramfs=.*/update_initramfs=all/' "${ROOTFS_DIR}/etc/initramfs-tools/update-initramfs.conf"
+
 on_chroot << EOF
+update-initramfs -u
 if [ -x /etc/init.d/fake-hwclock ]; then
 	/etc/init.d/fake-hwclock stop
 fi
@@ -57,7 +60,11 @@ rm -f "${ROOTFS_DIR}/root/.vnc/private.key"
 rm -f "${ROOTFS_DIR}/etc/vnc/updateid"
 
 update_issue "$(basename "${EXPORT_DIR}")"
-install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/issue.txt"
+install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/firmware/issue.txt"
+if ! [ -L "${ROOTFS_DIR}/boot/issue.txt" ]; then
+	ln -s firmware/issue.txt "${ROOTFS_DIR}/boot/issue.txt"
+fi
+
 
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 

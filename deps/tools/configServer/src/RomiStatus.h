@@ -12,15 +12,12 @@
 
 #include <cscore.h>
 #include <wpi/Signal.h>
+#include <wpi/json_fwd.h>
 #include <wpinet/uv/Loop.h>
 
-namespace wpi {
-class json;
-
-namespace uv {
+namespace wpi::uv {
 class Buffer;
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv
 
 class RomiStatus {
   struct private_init {};

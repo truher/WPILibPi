@@ -8,12 +8,9 @@
 #include <memory>
 
 #include <wpi/Signal.h>
+#include <wpi/json_fwd.h>
 
 #include "DataHistory.h"
-
-namespace wpi {
-class json;
-}  // namespace wpi
 
 class SystemStatus {
   struct private_init {};

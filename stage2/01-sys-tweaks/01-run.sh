@@ -34,17 +34,17 @@ ln -s /run /var/run
 ln -s /tmp /var/spool
 ln -s /tmp /var/lock
 sed -i -e 's/d \/var\/spool/#d \/var\/spool/' /usr/lib/tmpfiles.d/var.conf
-sed -i -e 's/\/var\/lib\/ntp/\/var\/tmp/' /etc/ntp.conf
 EOF
+#sed -i -e 's/\/var\/lib\/ntp/\/var\/tmp/' /etc/ntp.conf
 
 cat files/bash.bashrc >> "${ROOTFS_DIR}/etc/bash.bashrc"
 
 cat files/bash.logout >> "${ROOTFS_DIR}/etc/bash.bash_logout"
 
+#systemctl disable nfs-common
+#systemctl disable rpcbind
 on_chroot << EOF
 systemctl disable hwclock.sh
-systemctl disable nfs-common
-systemctl disable rpcbind
 if [ "${ENABLE_SSH}" == "1" ]; then
 	systemctl enable ssh
 else

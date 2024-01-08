@@ -87,11 +87,27 @@ on_chroot() {
 		mount --bind /sys "${ROOTFS_DIR}/sys"
 	fi
 
+	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/run)"; then
+		mount -t tmpfs  tmpfs "${ROOTFS_DIR}/run"
+	fi
+
+	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/tmp)"; then
+		mount -t tmpfs  tmpfs "${ROOTFS_DIR}/tmp"
+	fi
+
 	capsh $CAPSH_ARG "--chroot=${ROOTFS_DIR}/" -- -e "$@"
 }
 export -f on_chroot
 
 update_issue() {
-	echo -e "${IMG_NAME} ${IMG_VERSION} built on ${IMG_DATE}\nGenerated using ${PI_GEN}, ${PI_GEN_REPO}, ${GIT_HASH}, ${1}" > "${ROOTFS_DIR}/etc/rpi-issue"
+	echo -e "${PI_GEN_RELEASE} ${IMG_VERSION} built on ${IMG_DATE}\nGenerated using ${PI_GEN}, ${PI_GEN_REPO}, ${GIT_HASH}, ${1}" > "${ROOTFS_DIR}/etc/rpi-issue"
 }
 export -f update_issue
+
+ensure_next_loopdev() {
+	local loopdev
+	loopdev="$(losetup -f)"
+	loopmaj="$(echo "$loopdev" | sed -E 's/.*[^0-9]*?([0-9]+)$/\1/')"
+	[[ -b "$loopdev" ]] || mknod "$loopdev" b 7 "$loopmaj"
+}
+export -f ensure_next_loopdev

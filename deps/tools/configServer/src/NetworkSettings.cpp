@@ -6,6 +6,7 @@
 
 #include <unistd.h>
 
+#include <bit>
 #include <string>
 #include <vector>
 
@@ -56,8 +57,8 @@ bool NetmaskToCidr(std::string_view netmask, unsigned int* cidr) {
   in_addr addr;
   if (wpi::uv::NameToAddr(netmask, &addr) != 0) return false;
   uint32_t hostAddr = ntohl(addr.s_addr);
-  auto leadingOnes = wpi::countLeadingOnes(hostAddr);
-  auto trailingZeros = wpi::countTrailingZeros(hostAddr);
+  auto leadingOnes = std::countl_one(hostAddr);
+  auto trailingZeros = std::countr_zero(hostAddr);
   if (leadingOnes + trailingZeros != 32) return false;
   *cidr = leadingOnes;
   return true;
@@ -123,19 +124,19 @@ static std::string BuildDhcpcdSetting(
       break;
     case NetworkSettings::kStatic:
       fmt::print(os, "interface {}\n", iface);
-      fmt::print(os, "static ip_address={}/{}\n", addressOut, cidr);
+      fmt::print(os, "static ip_address={}/{}\n", addressOut.str(), cidr);
       if (!gatewayOut.empty())
-        fmt::print(os, "static routers={}\n", gatewayOut);
+        fmt::print(os, "static routers={}\n", gatewayOut.str());
       if (!dnsOut.empty())
-        fmt::print(os, "static domain_name_servers={}\n", dnsOut);
+        fmt::print(os, "static domain_name_servers={}\n", dnsOut.str());
       break;
     case NetworkSettings::kDhcpStatic:
       fmt::print(os, "profile static_{}\n", iface);
-      fmt::print(os, "static ip_address={}/{}\n", addressOut, cidr);
+      fmt::print(os, "static ip_address={}/{}\n", addressOut.str(), cidr);
       if (!gatewayOut.empty())
-        fmt::print(os, "static routers={}\n", gatewayOut);
+        fmt::print(os, "static routers={}\n", gatewayOut.str());
       if (!dnsOut.empty())
-        fmt::print(os, "static domain_name_servers={}\n", dnsOut);
+        fmt::print(os, "static domain_name_servers={}\n", dnsOut.str());
       fmt::print(os, "interface {}\n", iface);
       fmt::print(os, "fallback static_{}\n", iface);
       break;

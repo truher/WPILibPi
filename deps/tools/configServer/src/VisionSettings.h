@@ -10,10 +10,7 @@
 #include <string_view>
 
 #include <wpi/Signal.h>
-
-namespace wpi {
-class json;
-}  // namespace wpi
+#include <wpi/json_fwd.h>
 
 class VisionSettings {
   struct private_init {};

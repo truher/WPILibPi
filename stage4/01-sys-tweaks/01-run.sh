@@ -21,6 +21,10 @@ sh -c "cd ${BASE_DIR}/deps && tar cf - tools" | \
 #
 pushd "${STAGE_WORK_DIR}/tools"
 
+ls -l ${ROOTFS_DIR}/usr/local/frc-static/include
+ls -l ${ROOTFS_DIR}/usr/local/frc/include
+ls ${ROOTFS_DIR}/usr/local/frc-static/include/wpiutil
+
 export CXXFLAGS="-std=c++20 --sysroot=${ROOTFS_DIR} -Wl,-rpath -Wl,${ROOTFS_DIR}/opt/vc/lib"
 export PKG_CONFIG_DIR=
 export PKG_CONFIG_LIBDIR=${ROOTFS_DIR}/usr/lib/aarch64-linux-gnu/pkgconfig:${ROOTFS_DIR}/usr/lib/pkgconfig:${ROOTFS_DIR}/usr/share/pkgconfig:${ROOTFS_DIR}/usr/local/frc-static/lib/pkgconfig

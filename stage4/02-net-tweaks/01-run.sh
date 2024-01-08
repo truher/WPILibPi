@@ -6,10 +6,10 @@ install -v -m 600 files/wpa_supplicant.conf	"${ROOTFS_DIR}/etc/wpa_supplicant/"
 # disable wireless
 install -m 644 files/raspi-blacklist.conf "${ROOTFS_DIR}/etc/modprobe.d/"
 
-on_chroot << EOF
-	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_wait 0
-	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_netconf 1
-EOF
+#on_chroot << EOF
+#	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_wait 0
+#	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_netconf 1
+#EOF
 
 if [ -v WPA_COUNTRY ]; then
 	on_chroot <<- EOF
@@ -36,3 +36,4 @@ fi
 mkdir -p "${ROOTFS_DIR}/var/lib/systemd/rfkill/"
 echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-3f300000.mmcnr:wlan"
 echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-fe300000.mmcnr:wlan"
+echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-1001100000.mmc:wlan"

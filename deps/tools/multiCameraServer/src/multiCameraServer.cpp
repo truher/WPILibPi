@@ -10,9 +10,9 @@
 
 #include <fmt/format.h>
 #include <networktables/NetworkTableInstance.h>
+#include <wpi/MemoryBuffer.h>
 #include <wpi/StringExtras.h>
 #include <wpi/json.h>
-#include <wpi/raw_istream.h>
 
 #include "cameraserver/CameraServer.h"
 
@@ -152,8 +152,9 @@ bool ReadSwitchedCameraConfig(const wpi::json& config) {
 bool ReadConfig() {
   // open config file
   std::error_code ec;
-  wpi::raw_fd_istream is(configFile, ec);
-  if (ec) {
+  std::unique_ptr<wpi::MemoryBuffer> fileBuffer =
+      wpi::MemoryBuffer::GetFile(configFile, ec);
+  if (fileBuffer == nullptr || ec) {
     fmt::print(stderr, "could not open '{}': {}", configFile, ec.message());
     return false;
   }
@@ -161,7 +162,7 @@ bool ReadConfig() {
   // parse file
   wpi::json j;
   try {
-    j = wpi::json::parse(is);
+    j = wpi::json::parse(fileBuffer->GetCharBuffer());
   } catch (const wpi::json::parse_error& e) {
     ParseError("byte {}: {}", e.byte, e.what());
     return false;
@@ -288,7 +289,7 @@ int main(int argc, char* argv[]) {
 
   // start cameras
   // work around wpilibsuite/allwpilib#5055
-  frc::CameraServer::SetSize(frc::CameraServer::kSize160x120);
+  frc::CameraServer::RemoveCamera("unused");
   for (const auto& config : cameraConfigs)
     cameras.emplace_back(StartCamera(config));
 

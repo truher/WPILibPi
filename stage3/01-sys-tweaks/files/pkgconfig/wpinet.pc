@@ -2,12 +2,12 @@
 
 prefix=/usr/local/frc
 exec_prefix=${prefix}
-includedir=${prefix}/include
+includedir=${prefix}/include/wpinet
 libdir=${exec_prefix}/lib
 
 Name: wpinet
 Description: WPILib Robotics Library Networking
-Version: 2023.1.1
+Version: 2024.1.1
 Requires: wpiutil
 Libs: -L${libdir} -lwpinet
 Libs.private: -lpthread -lutil
